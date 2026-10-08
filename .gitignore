@@ -1,0 +1,31 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno (solo se versiona .env.example)
+.env
+.env.*
+!.env.example
+
+# Builds y artefactos
+dist/
+build/
+coverage/
+*.log
+
+# React Native / Expo
+.expo/
+android/app/build/
+ios/build/
+ios/Pods/
+*.apk
+*.aab
+*.ipa
+
+# Secretos
+secrets/
+*.pem
+
+# SO / editores
+.DS_Store
+Thumbs.db
+.idea/

@@ -1,0 +1,18 @@
+const mongoose = require('mongoose');
+
+// TODO: validar campos contra la sección "Modelo de datos" del documento de diseño.
+const speciesSchema = new mongoose.Schema(
+  {
+    commonName: { type: String, required: true },
+    scientificName: { type: String, required: true, unique: true },
+    description: { type: String },
+    imageUrl: { type: String },
+    category: { type: String },
+    rarity: { type: String, enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'] },
+    habitat: { type: String },
+    conservationStatus: { type: String },
+  },
+  { timestamps: true },
+);
+
+module.exports = mongoose.model('Species', speciesSchema);

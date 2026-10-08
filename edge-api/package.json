@@ -1,0 +1,13 @@
+{
+  "name": "pokebo-edge-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Edge API (DMZ): gateway/proxy hacia el Core API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

@@ -1,0 +1,62 @@
+# Entorno de desarrollo local.
+# - dmz:    red con salida a internet; solo el edge-api vive acá y publica puerto.
+# - secure: red interna (internal: true, sin salida a internet): core-api, mongo y redis.
+# El edge-api está en ambas redes para poder reenviar al core-api.
+# TODO: confirmar contra la sección "Despliegue" del documento de diseño.
+
+services:
+  edge-api:
+    build: ./edge-api
+    env_file:
+      - path: ./edge-api/.env
+        required: false
+    environment:
+      PORT: 3000
+      CORE_API_URL: http://core-api:4000
+    ports:
+      - "3000:3000"
+    networks:
+      - dmz
+      - secure
+    depends_on:
+      - core-api
+
+  core-api:
+    build: ./core-api
+    env_file:
+      - path: ./core-api/.env
+        required: false
+    environment:
+      PORT: 4000
+      MONGO_URI: mongodb://mongo:27017/pokebo
+      REDIS_URI: redis://redis:6379
+    networks:
+      - secure
+    depends_on:
+      - mongo
+      - redis
+
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - secure
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+    networks:
+      - secure
+
+networks:
+  dmz:
+    driver: bridge
+  secure:
+    driver: bridge
+    internal: true
+
+volumes:
+  mongo-data:
+  redis-data:

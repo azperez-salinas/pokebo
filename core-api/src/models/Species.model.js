@@ -4,9 +4,12 @@ const mongoose = require('mongoose');
 const speciesSchema = new mongoose.Schema(
   {
     commonName: { type: String, required: true },
+    class: { type: String, required: true },
+    family: { type: String, required: true },
     scientificName: { type: String, required: true, unique: true },
     description: { type: String },
-    imageUrl: { type: String },
+    diet: { type: String },
+    imageId: { type: mongoose.Schema.Types.ObjectId},
     category: { type: String },
     rarity: { type: String, enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'] },
     habitat: { type: String },

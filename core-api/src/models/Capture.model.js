@@ -4,8 +4,8 @@ const mongoose = require('mongoose');
 const captureSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    species: { type: mongoose.Schema.Types.ObjectId, ref: 'Species' },
-    photoUrl: { type: String, required: true },
+    specie: { type: mongoose.Schema.Types.ObjectId, ref: 'Species' },
+    photoId: { type: mongoose.Schema.Types.ObjectId, required: true },
     aiConfidence: { type: Number, min: 0, max: 1 },
     location: {
       type: { type: String, enum: ['Point'], default: 'Point' },

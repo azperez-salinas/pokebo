@@ -115,3 +115,53 @@ Un docker-compose.yml en la raíz que levante edge-api, core-api, mongo y redis 
 Al terminar
 Mostrame el árbol de carpetas final (tree o equivalente) y la lista de archivos creados, confirmame que estás parado en sprint/01 con el merge ya hecho, y decime qué falta decidir o que dejaste con TODO explícito.
 ```
+
+
+## 2026-10-10 — Modelos de MongoDB con Mongoose
+
+```text
+Necesito definir los modelos de MongoDB utilizando Mongoose para el backend de Pokebo, la aplicación de captura e identificación de especies animales.
+
+Los modelos son User, Species, Capture, Sighting, Achievement, UserAchievement y Notification.
+
+Definí los esquemas con sus campos, tipos de datos, referencias entre entidades, restricciones e índices necesarios. Utilizá ObjectId para las relaciones entre documentos y para referenciar las imágenes almacenadas en GridFS.
+
+Cada modelo debe estar separado en su propio archivo JavaScript y exportarse utilizando mongoose.model().
+```
+
+
+## 2026-10-10 — Conexión a MongoDB
+
+```text
+Necesito configurar la conexión de Core API a MongoDB utilizando Mongoose.
+
+La URI de conexión debe obtenerse desde la configuración del proyecto mediante MONGO_URI, sin incluir credenciales directamente en el código.
+
+Creá un archivo config/mongo.js que exporte una función asíncrona connectMongo(), encargada de establecer la conexión a la base de datos y de gestionar eventos de conexión y reintentos.
+```
+
+
+## 2026-10-10 — Configuración de GridFS
+
+```text
+Hay que configurar GridFS para almacenar imágenes en MongoDB dentro de Core API.
+
+Utilizá GridFSBucket del driver de MongoDB y reutilizá la conexión que ya establece Mongoose.
+
+Creá un archivo config/gridfs.js con una función initGridFS() para inicializar el bucket y una función getGridFSBucket() para acceder a él desde otros módulos.
+
+La inicialización debe realizarse después de que MongoDB se haya conectado correctamente.
+```
+
+
+## 2026-10-10 — Conexión a Redis
+
+```text
+Configurar la conexión de Core API a Redis utilizando Node.js.
+
+La URI debe obtenerse desde REDIS_URI mediante el archivo de configuración del proyecto.
+
+Creá config/redis.js utilizando el paquete redis, con una función asíncrona connectRedis() y un cliente reutilizable para las futuras operaciones.
+
+Incluir el manejo de eventos de error y exportá tanto la función de conexión como el cliente.
+```

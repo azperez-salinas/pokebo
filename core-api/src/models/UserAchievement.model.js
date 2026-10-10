@@ -7,6 +7,7 @@ const userachievementSchema = new mongoose.Schema(
     achievement: { type: mongoose.Schema.Types.ObjectId, ref: 'Achievement', required: true },
     progress: { type: Number, default: 0 },
     unlockedAt: { type: Date },
+    capture: { type: mongoose.Schema.Types.ObjectId, ref: 'Capture' },
   },
   { timestamps: true },
 );

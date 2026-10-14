@@ -281,3 +281,35 @@ Mostrame:
 3. Lista de variables de entorno que agregaste o cambiaste en los .env (sin mostrar los valores reales de las claves, solo los nombres)
 4. Cualquier supuesto que hayas tenido que tomar por tu cuenta, para que yo lo revise
 ```
+
+
+## 2026-10-14 — Fix: refresh stub, serviceAuth duplicado y prueba en Docker
+
+```text
+Si el directorio actual no es un repositorio git o no corresponde a "pokebo", avisame y no hagas nada más.
+
+Docker Desktop ya está corriendo. Hacé esto en una rama nueva feature/fix-auth-refresh-y-bcrypt desde sprint/01, con commits cortos (una línea, sin explayarte), merge normal (--no-ff) a sprint/01 al final, sin pushear a remoto.
+
+1. POST /refresh en core-api (core-api/src/routes/auth.routes.js): hoy tiene auth.middleware delante, lo que lo rompe porque auth.service.refresh() sigue sin implementar y revienta con un error no controlado (probablemente sale como 500 en vez de un 501 limpio). Devolvé esa ruta al comportamiento de stub simple: sacale el middleware auth y el validate, y que el controller responda directamente 501 { code: "NOT_IMPLEMENTED", message: "TODO" }, igual que estaba antes de la rama de auth. Dejá un comentario arriba de la ruta explicando que se revierte a stub a propósito hasta que alguien implemente el refresh de verdad (con Redis vía token.service.js, que ya existe y tiene findRefreshToken/revokeRefreshToken listos para usar).
+
+2. serviceAuth duplicado: está montado global en core-api/src/app.js para todo /api/v1, y además puesto explícitamente en cada ruta de core-api/src/routes/auth.routes.js. El middleware ya se protege con req.serviceAuthenticated para no recalcular la firma dos veces, así que funciona, pero es redundante y confunde a quien lea el código. Sacalo de auth.routes.js (dejalo solo montado global en app.js) y confirmá que las demás rutas (users, species, captures, map, achievements, notifications) NO lo tengan repetido tampoco.
+
+3. Agregar JWT_PUBLIC_KEY a core-api/.env.example (hoy falta esa variable en la plantilla, aunque el código ya la puede derivar de la privada). Agregala con el mismo formato que JWT_PRIVATE_KEY (placeholder entre comillas, con un comentario arriba explicando que es la clave pública correspondiente).
+
+4. Probar de verdad con Docker, ahora que está levantado:
+   - docker compose build (sin cache si hace falta) y fijate en particular que bcrypt compile bien en la imagen de core-api (node:20-alpine u otra base, la que esté en el Dockerfile) — esto es lo más importante a confirmar, porque bcrypt compila un binario nativo y puede fallar en Linux/Alpine aunque funcione en Windows.
+   - docker compose up -d
+   - Esperar a que mongo, redis, core-api y edge-api estén healthy/arriba (docker compose ps)
+   - Pegarle con curl (o el cliente que prefieras) a través del Edge (no directo al Core) a estos casos, y mostrame el resultado de cada uno:
+     a) POST /api/v1/auth/register con datos válidos → esperar 201
+     b) POST /api/v1/auth/register repitiendo el mismo username → esperar 409 USERNAME_TAKEN
+     c) POST /api/v1/auth/login con usuario/contraseña correctos → esperar 200 con accessToken y refreshToken
+     d) POST /api/v1/auth/login con contraseña incorrecta → esperar 401 INVALID_CREDENTIALS
+     e) PUT /api/v1/auth/password sin Authorization header → esperar 401
+     f) PUT /api/v1/auth/password con el accessToken del login y la contraseña actual correcta → esperar 200, y después confirmar que un login con la contraseña vieja ya da 401 y con la nueva da 200
+     g) POST /api/v1/auth/refresh (para confirmar que después del punto 1 vuelve a responder 501 limpio, no 500)
+   - docker compose logs core-api --tail=50 y docker compose logs edge-api --tail=50, pegame cualquier error o warning que aparezca durante estas pruebas (no solo si falla, también si hay warnings raros)
+   - docker compose down al terminar
+
+Al final: actualizá prompts.md con una entrada nueva (fecha de hoy, título "Fix: refresh stub, serviceAuth duplicado y prueba en Docker") pegando este prompt completo. Confirmame que quedaste en sprint/01 con todo mergeado, y pegame los resultados reales de cada prueba (a-g) y de los logs, no un resumen de que "todo salió bien" — quiero ver las respuestas HTTP concretas (status code y body) de cada una.
+```

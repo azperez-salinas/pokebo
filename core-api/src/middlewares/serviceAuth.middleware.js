@@ -7,10 +7,8 @@ const { AppError } = require('../utils/errors');
 
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
+// Montado una sola vez, global en app.js para todo /api/v1
 function serviceAuth(req, res, next) {
-  // Ya se verificó en esta request (está montado global en app.js y también por ruta)
-  if (req.serviceAuthenticated) return next();
-
   const unauthorized = () => next(new AppError(401, 'INVALID_SERVICE_SIGNATURE', 'Request no firmada por el Edge'));
 
   const timestamp = req.get('X-Service-Timestamp');
@@ -30,7 +28,6 @@ function serviceAuth(req, res, next) {
     return unauthorized();
   }
 
-  req.serviceAuthenticated = true;
   return next();
 }
 

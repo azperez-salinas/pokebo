@@ -2,7 +2,13 @@
 const bcrypt = require('bcrypt');
 const User = require('../models/User.model');
 const { AppError } = require('../utils/errors');
-const { issueTokens } = require('./token.service');
+const {
+  issueTokens,
+  verifyToken,
+  findRefreshToken,
+  revokeRefreshToken,
+  revokeAllRefreshTokens,
+} = require('./token.service');
 
 const BCRYPT_ROUNDS = 10;
 
@@ -70,11 +76,41 @@ async function changePassword(userId, currentPassword, newPassword) {
 
   user.passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
   await user.save();
+
+  // Las sesiones abiertas con la contraseña vieja dejan de poder renovarse
+  await revokeAllRefreshTokens(user._id);
 }
 
+// Mismo error para token inválido, vencido, ya usado o revocado: no se da pista del motivo
+const invalidRefreshToken = () => new AppError(401, 'INVALID_REFRESH_TOKEN', 'Refresh token inválido o expirado');
+
 async function refresh(refreshToken) {
-  // TODO
-  throw new Error('not implemented');
+  let payload;
+  try {
+    payload = verifyToken(refreshToken);
+  } catch (err) {
+    throw invalidRefreshToken();
+  }
+  if (payload.type !== 'refresh') {
+    throw invalidRefreshToken();
+  }
+
+  if (!(await findRefreshToken(payload.sub, payload.jti))) {
+    throw invalidRefreshToken();
+  }
+
+  const user = await User.findById(payload.sub);
+  if (!user) {
+    throw new AppError(404, 'USER_NOT_FOUND', 'Usuario no encontrado');
+  }
+
+  // Rotación: el refresh usado se invalida. Si DEL no borró nada, otra request lo usó en paralelo.
+  if (!(await revokeRefreshToken(payload.sub, payload.jti))) {
+    throw invalidRefreshToken();
+  }
+
+  const tokens = await issueTokens(user);
+  return { user: toPublicUser(user), ...tokens };
 }
 
 module.exports = { register, login, changePassword, refresh };

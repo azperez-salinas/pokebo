@@ -313,3 +313,58 @@ Docker Desktop ya está corriendo. Hacé esto en una rama nueva feature/fix-auth
 
 Al final: actualizá prompts.md con una entrada nueva (fecha de hoy, título "Fix: refresh stub, serviceAuth duplicado y prueba en Docker") pegando este prompt completo. Confirmame que quedaste en sprint/01 con todo mergeado, y pegame los resultados reales de cada prueba (a-g) y de los logs, no un resumen de que "todo salió bien" — quiero ver las respuestas HTTP concretas (status code y body) de cada una.
 ```
+
+
+## 2026-10-14 — Auth: refresh token con rotación
+
+```text
+Estás en el repo pokebo, rama sprint/01 actualizada y limpia. Implementá POST /refresh de verdad (Core + Edge) con rotación de refresh tokens, y aprovechá para revocar los refresh tokens existentes cuando se cambia la contraseña.
+
+Contexto que ya existe y no hay que tocar:
+- core-api/src/services/token.service.js ya tiene signAccessToken, signRefreshToken, verifyToken, storeRefreshToken, findRefreshToken, revokeRefreshToken, issueTokens. Las claves en Redis son refresh:<userId>:<jti>.
+- Los JWT son RS256. El access token lleva type: 'access'. El refresh lleva type: 'refresh' y jti.
+- core-api/src/routes/auth.routes.js tiene POST /refresh montado sin middlewares (solo controller.refresh), con un comentario que dice que está así a propósito hasta implementar esto.
+- edge-api/src/routes/auth.routes.js tiene POST /refresh con appVersion, auth, rateLimit, notImplemented.
+- serviceAuth ya está montado global en core-api/src/app.js para todo /api/v1, no hace falta agregarlo por ruta.
+
+Trabajá en una sola rama: feature/auth-refresh-token, creada desde sprint/01.
+
+1. Validator
+   En core-api/src/validators/auth.validator.js agregá un schema refresh que exija refreshToken (string, requerido). No toques los demás schemas.
+
+2. Core: lógica de refresh (rotación)
+   En core-api/src/services/auth.service.js reemplazá el refresh(refreshToken) actual (que tira "not implemented") por esto:
+   - Verificar el token con token.service.verifyToken. Si falla (inválido o expirado) o si payload.type !== 'refresh', tirar AppError(401, 'INVALID_REFRESH_TOKEN', ...).
+   - Buscar en Redis con findRefreshToken(payload.sub, payload.jti). Si no existe (ya usado, revocado, o vencido), tirar el mismo AppError(401, 'INVALID_REFRESH_TOKEN', ...). No distingas el motivo en la respuesta, para no dar pistas.
+   - Buscar el User por payload.sub. Si no existe, AppError(404, 'USER_NOT_FOUND', ...).
+   - Revocar el refresh token viejo con revokeRefreshToken(payload.sub, payload.jti) (rotación: un refresh token usado no sirve una segunda vez).
+   - Emitir tokens nuevos con issueTokens(user) y devolver lo mismo que devuelven register/login (access, refresh, y el usuario con toPublicUser si corresponde — fijate cómo lo hacen esas funciones y seguí el mismo patrón).
+
+3. Core: ruta
+   En core-api/src/routes/auth.routes.js, cambiá la línea de /refresh a:
+     router.post('/refresh', validate(schemas.refresh), controller.refresh);
+   Sacá el comentario que decía que estaba pendiente. No le pongas el middleware auth (el usuario no tiene access token válido en este punto, por eso pide refresh).
+
+4. Core: controller
+   En core-api/src/controllers/auth.controller.js, el método refresh ya debe existir como stub 501 — reemplazalo para que tome req.body.refreshToken, llame a authService.refresh(...) y devuelva 200 con el resultado, con el mismo manejo de errores (next(err) o como estén haciendo los demás métodos del controller) que usan register/login/changePassword.
+
+5. Core: revocar refresh tokens al cambiar contraseña
+   En core-api/src/services/token.service.js agregá una función revokeAllRefreshTokens(userId) que borre todas las claves refresh:<userId>:* en Redis (con SCAN, no KEYS, para no bloquear). En auth.service.js, al final de changePassword (después de guardar la nueva contraseña), llamá a revokeAllRefreshTokens(user._id) para que las sesiones viejas queden inválidas.
+
+6. Edge: wire real
+   En edge-api/src/routes/auth.routes.js cambiá la línea de /refresh a:
+     router.post('/refresh', appVersion, rateLimit, forward);
+   Sacá el middleware auth (no tiene sentido pedir un access token válido para renovarlo) y reemplazá notImplemented por forward, igual que están armadas /register y /login.
+
+7. Tests
+   Si ya existe algún test (mockeado o no) para register/login/changePassword, agregá casos equivalentes para /refresh: refresh válido devuelve 200 con tokens nuevos; usar el mismo refresh token dos veces devuelve 401 la segunda vez (por la rotación); un refresh token con type: 'access' (mandar un access token donde va el refresh) devuelve 401; un refresh token de un usuario que ya no existe devuelve 404; después de un changePassword exitoso, un refresh token emitido antes del cambio deja de servir (401).
+
+Git:
+- Una sola rama feature/auth-refresh-token desde sprint/01.
+- Commits cortos y en español, sin explayarse, por ejemplo: "feat(auth): rotación de refresh token" y "feat(auth): revocar refresh tokens al cambiar password" (podés separarlos en 2 commits o dejarlo en uno, como prefieras, pero sin mezclar con otra cosa).
+- Al terminar, merge --no-ff de feature/auth-refresh-token a sprint/01.
+- Agregá una entrada nueva a prompts.md en la raíz del repo con la fecha de hoy, un título corto, y el texto completo de este prompt. Commit aparte para eso: "docs: agregar prompt de refresh token a prompts.md". Mergealo también a sprint/01 con --no-ff.
+- No hagas push a origin bajo ninguna circunstancia.
+
+Al final contame: en qué rama quedaste, el grafo de commits resultante, qué tests corriste y con qué resultado, y cualquier supuesto que hayas tenido que tomar.
+```

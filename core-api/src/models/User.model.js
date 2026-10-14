@@ -9,8 +9,7 @@ const userSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, unique: true, trim: true },
     fullname:{type: String, required: true, trim: true},
-    // El registro no pide email: es opcional (sparse para que el índice unique ignore los que no lo tienen)
-    email: { type: String, unique: true, sparse: true, lowercase: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     // Se graba en el registro y ningún endpoint lo modifica
     dateOfBirth: { type: Date, required: true },
     passwordHash: { type: String, required: true },

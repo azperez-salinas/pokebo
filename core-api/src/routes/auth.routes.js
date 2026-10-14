@@ -11,5 +11,8 @@ router.post('/register', validate(schemas.register), controller.register);
 router.post('/login', validate(schemas.login), controller.login);
 router.put('/password', auth, validate(schemas.changePassword), controller.changePassword);
 router.post('/refresh', validate(schemas.refresh), controller.refresh);
+// Recuperación de contraseña: sin auth, el usuario no está logueado
+router.post('/forgot-password', validate(schemas.forgotPassword), controller.forgotPassword);
+router.post('/reset-password', validate(schemas.resetPassword), controller.resetPassword);
 
 module.exports = router;

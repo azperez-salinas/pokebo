@@ -6,6 +6,7 @@ const PASSWORD_MIN_LENGTH = 8;
 const register = Joi.object({
   fullname: Joi.string().trim().required(),
   username: Joi.string().trim().required(),
+  email: Joi.string().email().required(),
   dateOfBirth: Joi.date().iso().max('now').required(),
   bio: Joi.string().trim().allow('').max(BIO_MAX_LENGTH),
   avatar: Joi.string().valid(...AVATARS),
@@ -27,4 +28,14 @@ const refresh = Joi.object({
   refreshToken: Joi.string().required(),
 });
 
-module.exports = { register, login, changePassword, refresh };
+const forgotPassword = Joi.object({
+  usernameOrEmail: Joi.string().required(),
+});
+
+const resetPassword = Joi.object({
+  usernameOrEmail: Joi.string().required(),
+  code: Joi.string().length(6).pattern(/^[0-9]+$/).required(),
+  newPassword: Joi.string().min(PASSWORD_MIN_LENGTH).required(),
+});
+
+module.exports = { register, login, changePassword, refresh, forgotPassword, resetPassword };

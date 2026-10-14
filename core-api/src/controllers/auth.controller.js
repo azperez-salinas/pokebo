@@ -37,9 +37,30 @@ async function refresh(req, res, next) {
   }
 }
 
+async function forgotPassword(req, res, next) {
+  try {
+    const result = await authService.forgotPassword(req.body.usernameOrEmail);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function resetPassword(req, res, next) {
+  try {
+    const { usernameOrEmail, code, newPassword } = req.body;
+    const result = await authService.resetPassword(usernameOrEmail, code, newPassword);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   register,
   login,
   changePassword,
   refresh,
+  forgotPassword,
+  resetPassword,
 };

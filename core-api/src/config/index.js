@@ -25,6 +25,8 @@ const config = {
   jwtPublicKey,
   accessTokenTtl: 15 * 60, // segundos
   refreshTokenTtl: 30 * 24 * 60 * 60, // segundos
+  passwordResetTtl: 15 * 60, // segundos
+  mailProvider: process.env.MAIL_PROVIDER || 'console',
   serviceSharedSecret: process.env.SERVICE_SHARED_SECRET,
   mongoUri: process.env.MONGO_URI,
   redisUri: process.env.REDIS_URI,

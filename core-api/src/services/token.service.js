@@ -41,8 +41,16 @@ async function findRefreshToken(userId, jti) {
   return value ? JSON.parse(value) : null;
 }
 
+// Devuelve true si el token existía y se borró
 async function revokeRefreshToken(userId, jti) {
-  await redisClient.del(refreshKey(userId, jti));
+  return (await redisClient.del(refreshKey(userId, jti))) > 0;
+}
+
+// Borra todos los refresh del usuario. SCAN (no KEYS) para no bloquear Redis.
+async function revokeAllRefreshTokens(userId) {
+  for await (const keys of redisClient.scanIterator({ MATCH: refreshKey(userId, '*'), COUNT: 100 })) {
+    if (keys.length) await redisClient.del(keys);
+  }
 }
 
 // Genera access + refresh y deja el refresh guardado en Redis
@@ -60,4 +68,5 @@ module.exports = {
   storeRefreshToken,
   findRefreshToken,
   revokeRefreshToken,
+  revokeAllRefreshTokens,
 };

@@ -9,6 +9,7 @@ const router = Router();
 
 router.post('/register', serviceAuth, validate(schemas.register), controller.register);
 router.post('/login', serviceAuth, validate(schemas.login), controller.login);
+router.put('/password', serviceAuth, auth, validate(schemas.changePassword), controller.changePassword);
 router.post('/refresh', auth, validate(schemas.refresh), controller.refresh);
 
 module.exports = router;

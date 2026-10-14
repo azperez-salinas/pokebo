@@ -21,8 +21,18 @@ async function login(req, res, next) {
   }
 }
 
+async function changePassword(req, res, next) {
+  try {
+    await authService.changePassword(req.user.id, req.body.currentPassword, req.body.newPassword);
+    res.status(200).json({ message: 'Contraseña actualizada' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   register,
   login,
+  changePassword,
   refresh: notImplemented,
 };

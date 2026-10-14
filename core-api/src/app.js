@@ -4,7 +4,8 @@ const errorHandler = require('./middlewares/error.middleware');
 
 const app = express();
 
-app.use(express.json({ limit: '10mb' }));
+// Se guarda el body crudo para verificar la firma HMAC del Edge
+app.use(express.json({ limit: '10mb', verify: (req, res, buf) => { req.rawBody = buf; } }));
 
 // Todo lo que entra al Core tiene que venir firmado por el Edge
 app.use('/api/v1', serviceAuth);

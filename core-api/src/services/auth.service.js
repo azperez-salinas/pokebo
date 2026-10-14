@@ -38,9 +38,24 @@ async function register(data) {
   return { user: toPublicUser(user), ...tokens };
 }
 
+// Hash de relleno: si el username no existe igual se corre bcrypt, para no revelar por tiempo de respuesta
+const DUMMY_HASH = bcrypt.hashSync('pokebo-dummy-password', BCRYPT_ROUNDS);
+
 async function login(credentials) {
-  // TODO
-  throw new Error('not implemented');
+  const { username, password } = credentials;
+  const user = await User.findOne({ username });
+
+  // Mismo error si no existe el usuario o si la contraseña está mal
+  const valid = await bcrypt.compare(password, user ? user.passwordHash : DUMMY_HASH);
+  if (!user || !valid) {
+    throw new AppError(401, 'INVALID_CREDENTIALS', 'Usuario o contraseña incorrectos');
+  }
+
+  user.lastLoginAt = new Date();
+  await user.save();
+
+  const tokens = await issueTokens(user);
+  return { user: toPublicUser(user), ...tokens };
 }
 
 async function refresh(refreshToken) {

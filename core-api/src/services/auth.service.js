@@ -58,9 +58,23 @@ async function login(credentials) {
   return { user: toPublicUser(user), ...tokens };
 }
 
+async function changePassword(userId, currentPassword, newPassword) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError(404, 'USER_NOT_FOUND', 'Usuario no encontrado');
+  }
+
+  if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    throw new AppError(401, 'INVALID_CURRENT_PASSWORD', 'La contraseña actual es incorrecta');
+  }
+
+  user.passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+  await user.save();
+}
+
 async function refresh(refreshToken) {
   // TODO
   throw new Error('not implemented');
 }
 
-module.exports = { register, login, refresh };
+module.exports = { register, login, changePassword, refresh };

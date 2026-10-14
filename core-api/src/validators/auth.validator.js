@@ -18,7 +18,12 @@ const login = Joi.object({
   password: Joi.string().required(),
 });
 
+const changePassword = Joi.object({
+  currentPassword: Joi.string().required(),
+  newPassword: Joi.string().min(PASSWORD_MIN_LENGTH).required(),
+});
+
 // TODO: definir schema de refresh.
 const refresh = {};
 
-module.exports = { register, login, refresh };
+module.exports = { register, login, changePassword, refresh };

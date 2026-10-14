@@ -1,7 +1,19 @@
+const authService = require('../services/auth.service');
+
 const notImplemented = (req, res) => res.status(501).json({ code: 'NOT_IMPLEMENTED', message: 'TODO' });
 
+// Los AppError del service (ej. 409 USERNAME_TAKEN) los traduce error.middleware
+async function register(req, res, next) {
+  try {
+    const result = await authService.register(req.body);
+    res.status(201).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
-  register: notImplemented,
+  register,
   login: notImplemented,
   refresh: notImplemented,
 };

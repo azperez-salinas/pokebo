@@ -368,3 +368,61 @@ Git:
 
 Al final contame: en qué rama quedaste, el grafo de commits resultante, qué tests corriste y con qué resultado, y cualquier supuesto que hayas tenido que tomar.
 ```
+
+
+## 2026-10-14 — Auth: recuperación de contraseña por mail
+
+```text
+Estás en el repo pokebo, rama sprint/01 actualizada y limpia. Implementá un flujo de "olvidé mi contraseña" (Core + Edge), separado del cambio de contraseña que ya existe, con un código de 6 dígitos que se manda por mail. El email pasa a ser obligatorio.
+
+1. Modelo
+   En core-api/src/models/User.model.js, el campo email pasa de opcional/sparse a required: true, unique: true (sin sparse). No toques los demás campos.
+
+2. Validators
+   En core-api/src/validators/auth.validator.js:
+   - En el schema register, agregá email: Joi.string().email().required() (hoy no está, porque el registro no lo pedía).
+   - Agregá un schema forgotPassword con usernameOrEmail: Joi.string().required().
+   - Agregá un schema resetPassword con usernameOrEmail: Joi.string().required(), code: Joi.string().length(6).pattern(/^[0-9]+$/).required(), newPassword: Joi.string().min(PASSWORD_MIN_LENGTH).required().
+
+3. Servicio de mail (mockeado)
+   Creá core-api/src/services/mail.service.js con una función sendPasswordResetCode(email, code) que por ahora solo hace console.log con un mensaje claro tipo [MAIL MOCK] Código de recuperación para <email>: <code>. Agregá un comentario arriba explicando que esto es un mock para desarrollo/demo y que en producción debería reemplazarse por un proveedor real (ej. Resend, Nodemailer con SMTP), dejando un env var MAIL_PROVIDER=console como único valor soportado por ahora. No instales ninguna librería de mail de verdad.
+
+4. Core: lógica de negocio
+   En core-api/src/services/auth.service.js:
+   - En register, si el email ya existe tirá AppError(409, 'EMAIL_TAKEN', 'El email ya está en uso'), de forma análoga a usernameTaken. Si el error de Mongo es un duplicado (code 11000), fijate en error.keyPattern o error.keyValue para devolver USERNAME_TAKEN o EMAIL_TAKEN según corresponda.
+   - Agregá forgotPassword(usernameOrEmail):
+     * Buscá el usuario por username o por email (User.findOne({ $or: [{ username: usernameOrEmail }, { email: usernameOrEmail }] })).
+     * Si no existe, no hagas nada más (no tires error, no reveles si existe o no la cuenta).
+     * Si existe, generá un código de 6 dígitos con crypto.randomInt(0, 1000000) (formateado con padStart a 6 dígitos), guardá en Redis la key pwreset:<userId> con { hash: sha256(code), attempts: 0 } y TTL de 15 minutos, y llamá a mailService.sendPasswordResetCode(user.email, code).
+     * La función siempre devuelve algo genérico como { message: 'Si la cuenta existe, se envió un código al mail asociado' }, exista o no el usuario, para no filtrar qué cuentas existen.
+   - Agregá resetPassword(usernameOrEmail, code, newPassword):
+     * Buscá el usuario igual que en forgotPassword.
+     * Mismo error genérico AppError(401, 'INVALID_RESET_CODE', 'Código inválido o expirado') tanto si el usuario no existe, como si no hay código pendiente en Redis, como si el código no coincide, como si ya se gastaron los intentos. No distingas el motivo en la respuesta.
+     * Si hay un código pendiente: comparar sha256(code) recibido contra el hash guardado con crypto.timingSafeEqual (convirtiendo ambos a Buffer). Si no coincide, incrementar attempts en Redis; si attempts llega a 5, borrar la key (invalidar el código) y tirar el error. Si coincide: hashear newPassword con bcrypt, guardarla, borrar la key de Redis del código, y llamar a revokeAllRefreshTokens(user._id) (ya existe en token.service.js) para cortar todas las sesiones viejas.
+
+5. Core: rutas y controller
+   En core-api/src/routes/auth.routes.js agregá:
+     router.post('/forgot-password', validate(schemas.forgotPassword), controller.forgotPassword);
+     router.post('/reset-password', validate(schemas.resetPassword), controller.resetPassword);
+   Sin auth (el usuario no está logueado en este flujo). En core-api/src/controllers/auth.controller.js agregá forgotPassword y resetPassword siguiendo el mismo patrón try/catch/next que los demás métodos, devolviendo 200 con el resultado del service.
+
+6. Edge
+   En edge-api/src/routes/auth.routes.js agregá, igual que register/login (sin auth):
+     router.post('/forgot-password', appVersion, rateLimit, forward);
+     router.post('/reset-password', appVersion, rateLimit, forward);
+
+7. Env
+   En core-api/.env.example agregá una línea MAIL_PROVIDER=console con un comentario corto explicando que es el único valor soportado por ahora y que en producción se reemplazaría por un proveedor real.
+
+8. Tests
+   Si existe el smoke test del scratchpad que vienen usando para register/login/password/refresh, agregá ahí casos para este flujo: forgot-password con usuario existente genera código y llama al mail mock (podés verificar indirectamente leyendo la key de Redis); forgot-password con usuario inexistente devuelve el mismo mensaje genérico y no crea nada en Redis; reset-password con código correcto cambia la contraseña y permite loguear con la nueva; reset-password con código incorrecto da 401 INVALID_RESET_CODE; reset-password después de 5 intentos fallidos invalida el código aunque después se mande el correcto; reset-password con código vencido (TTL pasado, podés simularlo borrando la key a mano en el test) da 401; después de un reset exitoso, los refresh tokens emitidos antes quedan inválidos (401 al usarlos), igual que en change-password.
+
+Git:
+- Una sola rama feature/auth-recuperar-password desde sprint/01.
+- Commits cortos en español, por ejemplo "feat(auth): recuperación de contraseña por código de mail" (podés separar en más de uno si mezclás cosas muy distintas, pero sin alargarte en los mensajes).
+- Al terminar, merge --no-ff de feature/auth-recuperar-password a sprint/01.
+- Agregá una entrada a prompts.md con la fecha de hoy, un título corto, y el texto completo de este prompt. Commit aparte: "docs: agregar prompt de recuperación de contraseña a prompts.md". Mergealo también con --no-ff.
+- A diferencia de las veces anteriores, esta vez SÍ hacé push: git push origin sprint/01, al final, después de los dos merges.
+
+Al final contame: en qué rama quedaste, el grafo de commits resultante, si el push salió bien, qué tests corriste y con qué resultado, y cualquier supuesto que hayas tenido que tomar (en especial si había usuarios de prueba sin email en la base que rompan la validación required).
+```

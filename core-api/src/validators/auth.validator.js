@@ -12,8 +12,13 @@ const register = Joi.object({
   password: Joi.string().min(PASSWORD_MIN_LENGTH).required(),
 });
 
-// TODO: definir schemas con la librería de validación elegida.
-const login = {};
+// Solo credenciales: cualquier otro campo se descarta
+const login = Joi.object({
+  username: Joi.string().trim().required(),
+  password: Joi.string().required(),
+});
+
+// TODO: definir schema de refresh.
 const refresh = {};
 
 module.exports = { register, login, refresh };

@@ -8,7 +8,7 @@ const controller = require('../controllers/auth.controller');
 const router = Router();
 
 router.post('/register', serviceAuth, validate(schemas.register), controller.register);
-router.post('/login', validate(schemas.login), controller.login);
+router.post('/login', serviceAuth, validate(schemas.login), controller.login);
 router.post('/refresh', auth, validate(schemas.refresh), controller.refresh);
 
 module.exports = router;

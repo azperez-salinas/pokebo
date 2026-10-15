@@ -38,4 +38,8 @@ const resetPassword = Joi.object({
   newPassword: Joi.string().min(PASSWORD_MIN_LENGTH).required(),
 });
 
-module.exports = { register, login, changePassword, refresh, forgotPassword, resetPassword };
+const logout = Joi.object({
+  refreshToken: Joi.string().required(),
+});
+
+module.exports = { register, login, changePassword, refresh, forgotPassword, resetPassword, logout};

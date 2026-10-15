@@ -39,4 +39,13 @@ async function uploadImage({ buffer, filename, contentType }) {
   return uploadStream.id;
 }
 
-module.exports = { uploadImage };
+// Borra una imagen de GridFS. Si ya no existe no es un error (el borrado es idempotente).
+async function deleteImage(id) {
+  try {
+    await getGridFSBucket().delete(id);
+  } catch (err) {
+    if (err.code !== 'ENOENT' && !/FileNotFound/i.test(err.message)) throw err;
+  }
+}
+
+module.exports = { uploadImage, deleteImage };

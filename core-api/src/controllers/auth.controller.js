@@ -37,6 +37,15 @@ async function refresh(req, res, next) {
   }
 }
 
+async function logout(req, res, next) {
+  try {
+    await authService.logout(req.body.refreshToken);
+    res.status(200).json({ message: 'Sesión cerrada' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function forgotPassword(req, res, next) {
   try {
     const result = await authService.forgotPassword(req.body.usernameOrEmail);
@@ -63,4 +72,5 @@ module.exports = {
   refresh,
   forgotPassword,
   resetPassword,
+  logout
 };

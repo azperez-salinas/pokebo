@@ -123,6 +123,19 @@ async function refresh(refreshToken) {
   return { user: toPublicUser(user), ...tokens };
 }
 
+// Cierra la sesión revocando el refresh token. Es idempotente: si el token es inválido, está vencido
+// o ya fue revocado no se avisa nada, el resultado para el cliente es el mismo (sesión cerrada).
+async function logout(refreshToken) {
+  let payload;
+  try {
+    payload = verifyToken(refreshToken);
+  } catch (err) {
+    return;
+  }
+  if (payload.type !== 'refresh') return;
+  await revokeRefreshToken(payload.sub, payload.jti);
+}
+
 // --- Recuperación de contraseña ("olvidé mi contraseña") ---
 // Código de 6 dígitos por mail. En Redis se guarda solo su sha256, en el hash pwreset:<userId>
 // con los campos { hash, attempts } y TTL de 15 minutos.
@@ -182,4 +195,4 @@ async function resetPassword(usernameOrEmail, code, newPassword) {
   return { message: 'Contraseña actualizada' };
 }
 
-module.exports = { register, login, changePassword, refresh, forgotPassword, resetPassword };
+module.exports = { register, login, changePassword, refresh, forgotPassword, resetPassword, logout };

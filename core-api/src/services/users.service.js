@@ -7,14 +7,10 @@ const UserAchievement = require('../models/UserAchievement.model');
 const { deleteImage } = require('./gridfs.service');
 const { revokeAllRefreshTokens } = require('./token.service');
 const { AppError } = require('../utils/errors');
+const toPublicUser = require('../utils/toPublicUser');
 
 const userNotFound = () => new AppError(404, 'USER_NOT_FOUND', 'Usuario no encontrado');
-
-// Devuelve el usuario sin passwordHash ni tokens de dispositivo
-function toPublicUser(user) {
-  const { passwordHash, pushTokens, __v, ...rest } = user.toObject();
-  return rest;
-}
+  
 
 async function getById(userId) {
   // TODO

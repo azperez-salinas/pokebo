@@ -6,6 +6,7 @@ const { redisClient } = require('../config/redis');
 const User = require('../models/User.model');
 const mailService = require('./mail.service');
 const { AppError } = require('../utils/errors');
+const toPublicUser = require('../utils/toPublicUser');
 const {
   issueTokens,
   verifyToken,
@@ -19,11 +20,6 @@ const BCRYPT_ROUNDS = 10;
 const usernameTaken = () => new AppError(409, 'USERNAME_TAKEN', 'El nombre de usuario ya está en uso');
 const emailTaken = () => new AppError(409, 'EMAIL_TAKEN', 'El email ya está en uso');
 
-// Devuelve el usuario sin passwordHash
-function toPublicUser(user) {
-  const { passwordHash, __v, ...rest } = user.toObject();
-  return rest;
-}
 
 async function register(data) {
   const { password, ...fields } = data;

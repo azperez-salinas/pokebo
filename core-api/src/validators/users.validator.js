@@ -1,7 +1,6 @@
 const Joi = require('joi');
 const { AVATARS } = require('../models/User.model');
 
-// Solo se editan estos campos. username, email y dateOfBirth no se modifican por acá:
 // el validate descarta cualquier otro campo (stripUnknown) y min(1) rechaza el body que quede vacío.
 const updateMe = Joi.object({
   avatar: Joi.string().valid(...AVATARS),

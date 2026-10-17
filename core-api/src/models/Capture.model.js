@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const captureSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    specie: { type: mongoose.Schema.Types.ObjectId, ref: 'Species' },
+    species: { type: mongoose.Schema.Types.ObjectId, ref: 'Species' },
     photoId: { type: mongoose.Schema.Types.ObjectId, required: true },
     aiConfidence: { type: Number, min: 0, max: 1 },
     location: {
@@ -18,5 +18,6 @@ const captureSchema = new mongoose.Schema(
 );
 
 captureSchema.index({ location: '2dsphere' });
+captureSchema.index({ user: 1, capturedAt: -1 });
 
 module.exports = mongoose.model('Capture', captureSchema);

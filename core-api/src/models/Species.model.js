@@ -11,7 +11,6 @@ const speciesSchema = new mongoose.Schema(
     diet: { type: String },
     imageId: { type: mongoose.Schema.Types.ObjectId},
     category: { type: String },
-    rarity: { type: String, enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'] },
     habitat: { type: String },
     conservationStatus: { type: String },
   },

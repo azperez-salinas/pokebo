@@ -29,8 +29,17 @@ docker compose up --build
 
 ## App
 
+La app usa Expo SDK 57 y requiere Node.js 22.13 o superior. Para abrirla con
+Expo Go 57, instalá las dependencias y arrancá Metro:
+
 ```bash
 cd app
 npm install
 npm start
 ```
+
+Escaneá el QR con Expo Go. La computadora y el teléfono deben estar en la misma
+red Wi-Fi. Para probar el registro y el inicio de sesión, copiá `app/.env.example`
+a `app/.env` y cambiá `EXPO_PUBLIC_API_URL` por la IP local de la computadora.
+El Edge API debe estar levantado en el puerto 3000; `localhost` dentro del
+teléfono apunta al propio teléfono. Reiniciá Metro después de cambiar `.env`.

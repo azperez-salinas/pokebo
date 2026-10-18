@@ -17,13 +17,13 @@ const tabs = [
 ];
 
 // Pantalla principal para montar cuando exista una sesión autenticada.
-export default function MainNavigation() {
+export default function MainNavigation({ onLogout }) {
   const [activeTab, setActiveTab] = useState('map');
   const { Screen } = tabs.find((tab) => tab.id === activeTab);
 
   return (
     <SafeAreaView style={styles.screen}>
-      <Screen />
+      <Screen onLogout={onLogout} />
       <View style={styles.tabBar}>
         {tabs.map(({ id, label }) => {
           const selected = id === activeTab;

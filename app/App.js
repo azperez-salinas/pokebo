@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { useFonts } from 'expo-font';
 import styles, { colors, fonts } from './src/styles';
+import WelcomeScreen from './src/screens/WelcomeScreen';
+import LoginScreen from './src/screens/LoginScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
+import MainNavigation from './src/navigation';
+import { logout } from './src/services/auth.service';
 
-// TODO: reemplazar por la navegación (src/navigation) cuando esté definida.
 export default function App() {
+  const [screen, setScreen] = useState('welcome');
+  const [session, setSession] = useState(null);
   const [fontsLoaded, fontError] = useFonts({
     [fonts.display]: require('./src/assets/fonts/PressStart2P-Regular.ttf'),
     [fonts.body]: require('./src/assets/fonts/VT323-Regular.ttf'),
@@ -20,9 +26,33 @@ export default function App() {
     );
   }
 
-  return (
-    <View style={[styles.screen, styles.content]}>
-      <Text style={styles.title}>pokebo</Text>
-    </View>
-  );
+  if (session) {
+    return <MainNavigation onLogout={async () => {
+      await logout(session.refreshToken);
+      setSession(null);
+      setScreen('welcome');
+    }} />;
+  }
+
+  if (screen === 'login') {
+    return (
+      <LoginScreen
+        onBack={() => setScreen('welcome')}
+        onRegister={() => setScreen('register')}
+        onAuthenticated={setSession}
+      />
+    );
+  }
+
+  if (screen === 'register') {
+    return (
+      <RegisterScreen
+        onBack={() => setScreen('welcome')}
+        onLogin={() => setScreen('login')}
+        onAuthenticated={setSession}
+      />
+    );
+  }
+
+  return <WelcomeScreen onStart={() => setScreen('register')} onLogin={() => setScreen('login')} />;
 }

@@ -1,10 +1,6 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import ComingSoon from '../components/ComingSoon';
 
 export default function AchievementsScreen() {
-  return (
-    <View>
-      <Text>AchievementsScreen</Text>
-    </View>
-  );
+  return <ComingSoon title="Logros" />;
 }

@@ -1,10 +1,6 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import ComingSoon from '../components/ComingSoon';
 
 export default function EncyclopediaScreen() {
-  return (
-    <View>
-      <Text>EncyclopediaScreen</Text>
-    </View>
-  );
+  return <ComingSoon title="Colección" />;
 }

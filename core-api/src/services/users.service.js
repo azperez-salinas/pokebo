@@ -13,8 +13,13 @@ const userNotFound = () => new AppError(404, 'USER_NOT_FOUND', 'Usuario no encon
   
 
 async function getById(userId) {
-  // TODO
-  throw new Error('not implemented');
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw userNotFound();
+  }
+
+  return toPublicUser(user);
 }
 
 // Actualiza solo los campos recibidos. settings se aplica campo a campo para no pisar el resto.

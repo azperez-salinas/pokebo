@@ -13,7 +13,7 @@ export default function WelcomeScreen({ onStart, onLogin }) {
     <AuthLayout contentStyle={styles.content}>
       <View style={styles.hero}>
         <Image accessibilityLabel="Pokébola" source={pokeball} style={styles.pokeball} />
-        <Text style={styles.brand}>PokédexUy</Text>
+        <Text style={styles.brand}>PokeBO</Text>
         <Text style={styles.tagline}>Salí a explorar y{'\n'}capturá la fauna de{'\n'}Uruguay</Text>
       </View>
       <View style={styles.actions}>
@@ -25,6 +25,7 @@ export default function WelcomeScreen({ onStart, onLogin }) {
   );
 }
 
+//está bien que el estilo esté en el mismo archivo que el componente? o conviene separarlo en otro archivo?
 const styles = StyleSheet.create({
   content: { justifyContent: 'space-between' },
   hero: { alignItems: 'center', marginTop: 58 },

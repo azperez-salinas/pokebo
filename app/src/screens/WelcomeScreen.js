@@ -2,11 +2,10 @@ import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import AuthButton from '../components/AuthButton';
 import AuthLayout from '../components/AuthLayout';
-import palette from '../assets/palette.json';
-import { fonts } from '../styles';
+import { palette, fonts, icons } from '../styles';
 import appConfig from '../../app.json';
 
-const pokeball = require('../assets/icons/pokeballs/pokebola-con-sombra.png');
+const pokeball = icons.pokeballs.pokebolaConSombra;
 
 export default function WelcomeScreen({ onStart, onLogin }) {
   return (

@@ -1,8 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import ComingSoon from '../components/ComingSoon';
-import palette from '../assets/palette.json';
-import { fonts } from '../styles';
+import { palette, fonts } from '../styles';
 
 export default function SettingsScreen({ onLogout }) {
   const [error, setError] = React.useState('');

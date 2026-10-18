@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import AuthButton from './AuthButton';
 import AuthLayout from './AuthLayout';
-import palette from '../assets/palette.json';
-import { fonts } from '../styles';
+import { palette, fonts, icons } from '../styles';
 import { login, register } from '../services/auth.service';
 
-const pokeball = require('../assets/icons/pokeballs/pokebola-sin-sombra.png');
-const backArrow = require('../assets/icons/arrows/arrow-left.png');
+const pokeball = icons.pokeballs.pokebolaSinSombra;
+const backArrow = icons.arrows.arrowLeft;
 
 function Field({ label, value, onChangeText, ...props }) {
   return (

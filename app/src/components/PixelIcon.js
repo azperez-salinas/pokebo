@@ -1,7 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import styles, { colors } from '../styles';
-import palette from '../assets/palette.json';
+import styles, { colors, palette } from '../styles';
 
 // Cada dígito representa un píxel: transparente, contorno, relleno o luz.
 const icons = {

@@ -7,9 +7,9 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import palette from '../assets/palette.json';
+import { palette, images } from '../styles';
 
-const background = require('../assets/images/fondo-brillos.png');
+const background = images.fondoBrillos;
 
 export default function AuthLayout({ children, contentStyle }) {
   return (

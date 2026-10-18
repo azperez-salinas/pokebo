@@ -541,6 +541,23 @@
       "path": "icons/extras/pin_blue.png",
       "width": 48,
       "height": 48
+    },
+    "pokebola-con-sombra": {
+      "path": "icons/pokeballs/pokebola-con-sombra.png",
+      "width": 1254,
+      "height": 1254
+    },
+    "pokebola-sin-sombra": {
+      "path": "icons/pokeballs/pokebola-sin-sombra.png",
+      "width": 1254,
+      "height": 1254
+    }
+  },
+  "images": {
+    "fondo-brillos": {
+      "path": "images/fondo-brillos.png",
+      "width": 854,
+      "height": 1842
     }
   }
 }

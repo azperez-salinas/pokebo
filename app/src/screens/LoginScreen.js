@@ -1,10 +1,6 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import AuthForm from '../components/AuthForm';
 
-export default function LoginScreen() {
-  return (
-    <View>
-      <Text>LoginScreen</Text>
-    </View>
-  );
+export default function LoginScreen({ onBack, onRegister, onAuthenticated }) {
+  return <AuthForm mode="login" onBack={onBack} onSwitch={onRegister} onAuthenticated={onAuthenticated} />;
 }

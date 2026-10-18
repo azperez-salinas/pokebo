@@ -1,12 +1,13 @@
 import { StyleSheet } from 'react-native';
+import palette from '../assets/palette.json';
 
 export const colors = {
-  background: '#fffdf1',
-  ink: '#222333',
-  accent: '#3448b8',
-  muted: '#626574',
-  selected: '#e5e9ff',
-  camera: '#23bf6b',
+  background: palette.fondo,
+  ink: palette.tinta,
+  accent: palette.azul,
+  muted: palette.azul,
+  selected: palette.linea,
+  camera: palette.verde,
 };
 
 export const fonts = {

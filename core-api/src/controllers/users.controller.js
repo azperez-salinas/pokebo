@@ -2,6 +2,15 @@ const usersService = require('../services/users.service');
 
 const notImplemented = (req, res) => res.status(501).json({ code: 'NOT_IMPLEMENTED', message: 'TODO' });
 
+async function getMe(req, res, next) {
+  try {
+    const user = await usersService.getById(req.user.id);
+    res.status(200).json({ user });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function updateMe(req, res, next) {
   try {
     const user = await usersService.updateMe(req.user.id, req.body);
@@ -30,7 +39,7 @@ async function deleteMe(req, res, next) {
 }
 
 module.exports = {
-  getMe: notImplemented,
+  getMe,
   updateMe,
   updateMyLocation: notImplemented,
   registerPushToken,

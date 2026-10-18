@@ -1,10 +1,6 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import ComingSoon from '../components/ComingSoon';
 
 export default function CameraScreen() {
-  return (
-    <View>
-      <Text>CameraScreen</Text>
-    </View>
-  );
+  return <ComingSoon title="Cámara" />;
 }

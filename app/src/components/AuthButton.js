@@ -1,19 +1,10 @@
 import React from 'react';
 import { ImageBackground, Pressable, StyleSheet, Text } from 'react-native';
-import palette from '../assets/palette.json';
-import { fonts } from '../styles';
+import { palette, fonts, buttons } from '../styles';
 
 const assets = {
-  green: {
-    normal: require('../assets/buttons/rect/rect-verde-normal.png'),
-    pressed: require('../assets/buttons/rect/rect-verde-pressed.png'),
-    disabled: require('../assets/buttons/rect/rect-verde-disabled.png'),
-  },
-  yellow: {
-    normal: require('../assets/buttons/rect/rect-amarillo-normal.png'),
-    pressed: require('../assets/buttons/rect/rect-amarillo-pressed.png'),
-    disabled: require('../assets/buttons/rect/rect-amarillo-disabled.png'),
-  },
+  green: buttons.rect.verde,
+  yellow: buttons.rect.amarillo,
 };
 
 export default function AuthButton({ label, color = 'green', disabled = false, onPress }) {

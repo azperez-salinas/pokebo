@@ -1,0 +1,15 @@
+export default {
+  check: require('../../assets/icons/extras/check.png'),
+  close: require('../../assets/icons/extras/close.png'),
+  flash: require('../../assets/icons/extras/flash.png'),
+  gps: require('../../assets/icons/extras/gps.png'),
+  heart: require('../../assets/icons/extras/heart.png'),
+  lock: require('../../assets/icons/extras/lock.png'),
+  pinBlue: require('../../assets/icons/extras/pin_blue.png'),
+  pinGreen: require('../../assets/icons/extras/pin_green.png'),
+  pinRed: require('../../assets/icons/extras/pin_red.png'),
+  pinYellow: require('../../assets/icons/extras/pin_yellow.png'),
+  question: require('../../assets/icons/extras/question.png'),
+  search: require('../../assets/icons/extras/search.png'),
+  star: require('../../assets/icons/extras/star.png'),
+};

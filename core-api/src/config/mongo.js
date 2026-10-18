@@ -45,7 +45,7 @@ async function connectMongo() {
         throw new Error('No se pudo conectar a MongoDB');
       }
 
-      console.log('Reintentando conexión en 3 segundos...');
+      console.log(`Reintentando conexión en ${RETRY_DELAY_MS / 1000} segundos...`);
       await esperar(RETRY_DELAY_MS); // Esperar antes de reintentar
 
     }

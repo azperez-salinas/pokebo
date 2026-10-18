@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { GridFSBucket } = require('mongodb');
 
 let bucket;
 
@@ -8,8 +7,8 @@ function initGridFS() {
     throw new Error('MongoDB no está conectado');
   }
 
-  bucket = new GridFSBucket(mongoose.connection.db, {
-    bucketName: 'fs'
+  bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+    bucketName: 'fs',
   });
 
   console.log('GridFS inicializado');

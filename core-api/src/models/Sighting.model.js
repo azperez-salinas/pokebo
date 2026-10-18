@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 // TODO: validar campos contra la sección "Modelo de datos" del documento de diseño.
 const sightingSchema = new mongoose.Schema(
   {
-    specie: { type: mongoose.Schema.Types.ObjectId, ref: 'Species', required: true },
+    species: { type: mongoose.Schema.Types.ObjectId, ref: 'Species', required: true },
     capture: { type: mongoose.Schema.Types.ObjectId, ref: 'Capture' },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     location: {

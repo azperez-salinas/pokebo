@@ -3,7 +3,7 @@ import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import AuthButton from './AuthButton';
 import AuthLayout from './AuthLayout';
 import { palette, fonts, icons } from '../styles';
-import { login, register } from '../services/auth.service';
+import useAuth from '../hooks/useAuth';
 
 const pokeball = icons.pokeballs.pokebolaSinSombra;
 const backArrow = icons.arrows.arrowLeft;
@@ -27,7 +27,8 @@ function Field({ label, value, onChangeText, ...props }) {
   );
 }
 
-export default function AuthForm({ mode, onBack, onSwitch, onAuthenticated }) {
+export default function AuthForm({ mode, onBack, onSwitch }) {
+  const { login, register } = useAuth();
   const isRegister = mode === 'register';
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -68,10 +69,10 @@ export default function AuthForm({ mode, onBack, onSwitch, onAuthenticated }) {
     setError('');
     setSubmitting(true);
     try {
-      const session = isRegister
-        ? await register({ username: user, email: mail, password })
-        : await login({ username: user, password });
-      onAuthenticated(session);
+      // Al guardarse la sesión, App pasa sola a la pantalla principal (useAuth)
+      await (isRegister
+        ? register({ username: user, email: mail, password })
+        : login({ username: user, password }));
     } catch (cause) {
       setError(cause.message || 'No se pudo completar la solicitud.');
     } finally {

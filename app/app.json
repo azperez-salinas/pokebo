@@ -2,6 +2,25 @@
   "expo": {
     "name": "pokebo",
     "slug": "pokebo",
-    "version": "0.1.0"
+    "version": "0.1.0",
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Pokebo usa la cámara para sacar la foto del animal que querés capturar.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Pokebo usa tu ubicación al sacar una foto para registrar dónde viste al animal.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
+        }
+      ]
+    ]
   }
 }

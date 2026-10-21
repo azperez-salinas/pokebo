@@ -1,0 +1,98 @@
+# Entorno de desarrollo local.
+# Tres redes, para que lo expuesto a internet NO tenga ningún camino hacia los datos:
+#   dmz       -> con salida a internet. Solo el edge-api.
+#   edge-core -> interna (sin internet). La comparten SOLO edge-api y core-api: es el único pasillo.
+#   data      -> interna (sin internet). Solo core-api, mongo y redis.
+# Resultado: el edge-api no puede ni resolver el nombre "mongo" o "redis"; para llegar a los datos
+# tiene que pasar por la API del core-api (que además exige la firma HMAC).
+# Las contraseñas se leen del archivo .env de la RAÍZ (ver .env.example).
+
+services:
+  edge-api:
+    build: ./edge-api
+    env_file:
+      - path: ./edge-api/.env
+        required: false
+    environment:
+      PORT: 3000
+      CORE_API_URL: http://core-api:4000
+    ports:
+      - "3000:3000"
+    networks:
+      - dmz
+      - edge-core
+    depends_on:
+      - core-api
+    restart: on-failure
+
+  core-api:
+    build: ./core-api
+    env_file:
+      - path: ./core-api/.env
+        required: false
+    environment:
+      PORT: 4000
+      # compose pisa los MONGO_URI / REDIS_URI de core-api/.env con estos (que llevan credenciales)
+      MONGO_URI: mongodb://${MONGO_APP_USER:-pokebo_app}:${MONGO_APP_PASSWORD:?falta MONGO_APP_PASSWORD en .env}@mongo:27017/pokebo
+      REDIS_URI: redis://:${REDIS_PASSWORD:?falta REDIS_PASSWORD en .env}@redis:6379
+    networks:
+      - edge-core
+      - data
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+
+  mongo:
+    image: mongo:7
+    environment:
+      # Con estas dos variables Mongo arranca con autenticación activada
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?falta MONGO_ROOT_PASSWORD en .env}
+      MONGO_INITDB_DATABASE: pokebo
+      # Los usa mongo-init/01-create-app-user.js para crear el usuario de la app
+      MONGO_APP_USER: ${MONGO_APP_USER:-pokebo_app}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?falta MONGO_APP_PASSWORD en .env}
+    volumes:
+      - mongo-data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    # $$ evita que compose lo reemplace: la variable la expande el shell dentro del contenedor
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\""]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?falta REDIS_PASSWORD en .env}
+    volumes:
+      - redis-data:/data
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+networks:
+  dmz:
+    driver: bridge
+  edge-core:
+    driver: bridge
+    internal: true
+  data:
+    driver: bridge
+    internal: true
+
+volumes:
+  mongo-data:
+  redis-data:

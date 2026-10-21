@@ -1,8 +1,12 @@
-import { request } from './api';
+import { authRequest } from './session';
 
-export async function createCapture(data) {
-  // TODO
-  throw new Error('not implemented');
+// POST /captures como multipart/form-data: image (JPEG), lat y lng
+export async function createCapture({ uri, lat, lng }) {
+  const form = new FormData();
+  form.append('image', { uri, name: 'capture.jpg', type: 'image/jpeg' });
+  form.append('lat', String(lat));
+  form.append('lng', String(lng));
+  return authRequest('/captures', { method: 'POST', body: form });
 }
 
 export async function getMyCaptures() {

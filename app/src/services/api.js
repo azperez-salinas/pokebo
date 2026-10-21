@@ -1,22 +1,41 @@
+import { Platform } from 'react-native';
 import config from '../config';
 import appConfig from '../../app.json';
 
-// Cliente HTTP base contra el Edge API. Los endpoints protegidos agregan Authorization desde su servicio.
+// Timeout del cliente: el más largo de la cadena (cliente 20 s > Nginx 15 s > Edge→IA 12 s > Edge→Core 10 s).
+const REQUEST_TIMEOUT_MS = 20000;
+
+// Cliente HTTP base contra el Edge API. Las requests autenticadas pasan por session.authRequest, que agrega el token.
 export async function request(path, options = {}) {
-  const { method = 'GET', body, headers = {} } = options;
+  const { method = 'GET', body, headers = {}, token } = options;
+  // Con FormData (multipart) fetch arma el Content-Type con su boundary: no hay que fijarlo ni serializar el body
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   let response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         'X-App-Version': appConfig.expo.version,
+        'X-App-Platform': Platform.OS,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
+      signal: controller.signal,
     });
-  } catch {
-    throw new Error('No se pudo conectar al servidor. Revisá la URL del Edge API y tu conexión.');
+  } catch (cause) {
+    const error = new Error(cause?.name === 'AbortError'
+      ? 'El servidor tardó demasiado en responder. Probá de nuevo.'
+      : 'No se pudo conectar al servidor. Revisá la URL del Edge API y tu conexión.');
+    error.code = cause?.name === 'AbortError' ? 'TIMEOUT' : 'NETWORK_ERROR';
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 
   const text = await response.text();
@@ -28,8 +47,9 @@ export async function request(path, options = {}) {
   }
 
   if (!response.ok) {
-    const error = new Error(data?.message || 'No se pudo completar la solicitud.');
+    const error = new Error(data?.detail || data?.message || 'No se pudo completar la solicitud.');
     error.code = data?.code;
+    error.status = response.status;
     throw error;
   }
   return data;

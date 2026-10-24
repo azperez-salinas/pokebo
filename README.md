@@ -27,6 +27,32 @@ docker compose up --build
 - Edge API: http://localhost:3000 (ej. `GET /api/app-config`, `GET /api/v1/species` → 501)
 - Core API, MongoDB y Redis solo son accesibles dentro de la red `secure` (no publican puertos).
 
+## Cargar especies en MongoDB
+
+El catálogo inicial de 670 especies se encuentra en `mongo-init/seed/species.json`.
+
+Con MongoDB levantado, ejecutar desde la raíz del proyecto:
+
+```bash
+docker compose exec mongo sh -c 'mongosh --quiet --host localhost --username "$MONGO_APP_USER" --password "$MONGO_APP_PASSWORD" --authenticationDatabase pokebo --file /docker-entrypoint-initdb.d/seed/import-species.js'
+```
+
+El script carga las especies en la colección `pokebo.species`. Utiliza `upsert` por nombre científico, por lo que puede ejecutarse nuevamente sin generar duplicados.
+
+Para verificar la carga, ingresar a MongoDB:
+
+```bash
+docker compose exec mongo mongosh -u pokebo_app --authenticationDatabase pokebo pokebo
+```
+
+Ingresar la contraseña configurada en `MONGO_APP_PASSWORD` y ejecutar:
+
+```javascript
+db.species.countDocuments({})
+```
+
+El resultado esperado es `670`.
+
 ## App
 
 La app usa Expo SDK 57 y requiere Node.js 22.13 o superior. Para abrirla con

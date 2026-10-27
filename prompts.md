@@ -426,3 +426,25 @@ Git:
 
 Al final contame: en qué rama quedaste, el grafo de commits resultante, si el push salió bien, qué tests corriste y con qué resultado, y cualquier supuesto que hayas tenido que tomar (en especial si había usuarios de prueba sin email en la base que rompan la validación required).
 ```
+
+
+## 2026-10-21 — Backend de la galería de capturas (enciclopedia)
+
+```text
+Resumen de los mensajes y decisiones (el PDF del proyecto y el flujo 3 "Enciclopedia personal" del diagrama como referencia):
+
+Pedido: desarrollar la galería de capturas (enciclopedia) siguiendo el flujo 3 del diagrama y el PDF, empezando por todo el backend. No tomar ninguna decisión sin consultar, evacuar dudas antes de desarrollar y no crear funciones nuevas que ya existan en el proyecto.
+
+Decisiones dadas:
+- Filtros de la galería: year, month, family y class como query params opcionales y combinables en GET /captures/me, junto a speciesId, page y limit. Año y mes en UTC.
+- Imágenes: endpoint nuevo GET /images/:id con JWT, que sirve desde GridFS solo fotos propias o imágenes de especies (cualquier otro id responde 404). El Edge lo reenvía con una función hermana en forward.service.js.
+- Alcance: GET /captures/me, GET /species/:id e imágenes. GET /species (lista) queda fuera: el flujo no tiene una pantalla que lo use.
+- Progreso: especies distintas capturadas / especies del catálogo, respetando los filtros de clase y familia, devuelto en meta de GET /captures/me. En la ficha, solo la cantidad de capturas del usuario de esa especie (sin primera captura).
+- Modelo Species ajustado al documento: commonName, family, class (se mantiene), scientificName, description, habitat, diet, distribution, conservationStatus, funFacts[] e imagesIds[]. Sin thumbnailUrl.
+- Cada ítem de la galería trae la captura y un resumen de la especie (id, commonName, scientificName, family, class); la ficha completa se pide aparte con GET /species/:id.
+
+Lo que se hizo:
+- Core: modelo Species actualizado; captures.service.listByUser + controller listMine + validador listMine; species.service.getById (404 NOT_FOUND si no existe) + controller; gridfs.service.openImage; images.service, controller, validador y rutas (GET /images/:id); montaje en routes/v1/index.js.
+- Edge: /captures/me y /species/:id con el forward existente; forwardImagen en forward.service.js (headersFirmados extraído para no duplicar la firma); ruta /images/:id.
+- Verificado solo con node --check; sin pruebas contra Mongo (Docker apagado). POST /captures sigue sin guardar y no hay seed de especies, así que la galería devuelve vacío hasta cargar datos.
+```

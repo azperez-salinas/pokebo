@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const { objectId } = require('./common.validator');
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 // Largo máximo de 5 MB codificados en base64 (4 caracteres cada 3 bytes)
@@ -29,4 +30,15 @@ const create = Joi.object({
   }).required(),
 });
 
-module.exports = { create };
+// Filtros de la galería (GET /captures/me). Año y mes se interpretan en UTC.
+const listMine = Joi.object({
+  year: Joi.number().integer().min(2000).max(9999),
+  month: Joi.number().integer().min(1).max(12),
+  family: Joi.string().trim().min(1).max(60),
+  class: Joi.string().trim().min(1).max(60),
+  speciesId: objectId,
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(50).default(20),
+});
+
+module.exports = { create, listMine };

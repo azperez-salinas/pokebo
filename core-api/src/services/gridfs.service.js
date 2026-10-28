@@ -48,4 +48,17 @@ async function deleteImage(id) {
   }
 }
 
-module.exports = { uploadImage, deleteImage };
+// Abre la lectura de una imagen de GridFS. Devuelve { stream, contentType, length } o null si no existe.
+async function openImage(id) {
+  const bucket = getGridFSBucket();
+  const [file] = await bucket.find({ _id: id }).limit(1).toArray();
+  if (!file) return null;
+
+  return {
+    stream: bucket.openDownloadStream(file._id),
+    contentType: file.metadata && file.metadata.contentType,
+    length: file.length,
+  };
+}
+
+module.exports = { uploadImage, deleteImage, openImage };

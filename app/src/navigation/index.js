@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Pressable, SafeAreaView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MapScreen from '../screens/MapScreen';
 import EncyclopediaScreen from '../screens/EncyclopediaScreen';
 import CameraScreen from '../screens/CameraScreen';

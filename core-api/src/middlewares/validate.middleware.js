@@ -1,8 +1,8 @@
-const Joi = require('joi');
-const { AppError } = require('../utils/errors');
+const Joi = require("joi");
+const { AppError } = require("../utils/errors");
 
 // Partes de la request que se pueden validar. Se validan en este orden.
-const TARGETS = ['params', 'query', 'body'];
+const TARGETS = ["params", "query", "body"];
 
 // Middleware genérico de validación. Acepta dos formas:
 //   validate(schema)                         -> atajo: valida solo req.body
@@ -20,7 +20,10 @@ function validate(schemas) {
     const messages = [];
 
     for (const target of active) {
-      const { error, value } = byTarget[target].validate(req[target], { abortEarly: false, stripUnknown: true });
+      const { error, value } = byTarget[target].validate(req[target], {
+        abortEarly: false,
+        stripUnknown: true,
+      });
       if (error) {
         messages.push(...error.details.map((d) => d.message));
       } else {
@@ -29,7 +32,7 @@ function validate(schemas) {
     }
 
     if (messages.length > 0) {
-      return next(new AppError(400, 'VALIDATION_ERROR', messages.join('; ')));
+      return next(new AppError(400, "VALIDATION_ERROR", messages.join("; ")));
     }
     return next();
   };

@@ -426,3 +426,48 @@ Git:
 
 Al final contame: en qué rama quedaste, el grafo de commits resultante, si el push salió bien, qué tests corriste y con qué resultado, y cualquier supuesto que hayas tenido que tomar (en especial si había usuarios de prueba sin email en la base que rompan la validación required).
 ```
+
+
+## 2026-10-21 — Backend de la galería de capturas (enciclopedia)
+
+```text
+Resumen de los mensajes y decisiones (el PDF del proyecto y el flujo 3 "Enciclopedia personal" del diagrama como referencia):
+
+Pedido: desarrollar la galería de capturas (enciclopedia) siguiendo el flujo 3 del diagrama y el PDF, empezando por todo el backend. No tomar ninguna decisión sin consultar, evacuar dudas antes de desarrollar y no crear funciones nuevas que ya existan en el proyecto.
+
+Decisiones dadas:
+- Filtros de la galería: year, month, family y class como query params opcionales y combinables en GET /captures/me, junto a speciesId, page y limit. Año y mes en UTC.
+- Imágenes: endpoint nuevo GET /images/:id con JWT, que sirve desde GridFS solo fotos propias o imágenes de especies (cualquier otro id responde 404). El Edge lo reenvía con una función hermana en forward.service.js.
+- Alcance: GET /captures/me, GET /species/:id e imágenes. GET /species (lista) queda fuera: el flujo no tiene una pantalla que lo use.
+- Progreso: especies distintas capturadas / especies del catálogo, respetando los filtros de clase y familia, devuelto en meta de GET /captures/me. En la ficha, solo la cantidad de capturas del usuario de esa especie (sin primera captura).
+- Modelo Species ajustado al documento: commonName, family, class (se mantiene), scientificName, description, habitat, diet, distribution, conservationStatus, funFacts[] e imagesIds[]. Sin thumbnailUrl.
+- Cada ítem de la galería trae la captura y un resumen de la especie (id, commonName, scientificName, family, class); la ficha completa se pide aparte con GET /species/:id.
+
+Lo que se hizo:
+- Core: modelo Species actualizado; captures.service.listByUser + controller listMine + validador listMine; species.service.getById (404 NOT_FOUND si no existe) + controller; gridfs.service.openImage; images.service, controller, validador y rutas (GET /images/:id); montaje en routes/v1/index.js.
+- Edge: /captures/me y /species/:id con el forward existente; forwardImagen en forward.service.js (headersFirmados extraído para no duplicar la firma); ruta /images/:id.
+- Verificado solo con node --check; sin pruebas contra Mongo (Docker apagado). POST /captures sigue sin guardar y no hay seed de especies, así que la galería devuelve vacío hasta cargar datos.
+```
+
+## 2026-10-27 — Frontend de la galería de capturas (colección)
+
+```text
+Resumen de los mensajes y decisiones (documento del proyecto y bocetos como referencia):
+
+Pedido: implementar el frontend de la galería basándose en la documentación adjunta. No tomar ninguna decisión sin consultar, evacuar dudas antes de desarrollar y no crear funciones nuevas que ya existan en el proyecto.
+
+Decisiones dadas:
+- Grilla: solo las capturas del usuario (GET /captures/me), sin casilleros "???" del boceto; contador captured/total tomado de meta.progress.
+- Pantallas: la galería va en el tab Colección (EncyclopediaScreen); al tocar una captura se abre SpeciesDetailScreen (GET /species/:id) dentro del mismo tab, con estado local y sin librería de navegación. MyCapturesScreen no se toca.
+- Fotos: GET /images/:id exige JWT, así que <Image> recibe un source con headers (token + X-App-Version + X-App-Platform). No renueva el token si vence a mitad de sesión.
+- Filtros: todos los que soporta el backend (clase, familia, año y mes) como un desplegable por filtro. Clase con las 4 del catálogo (Aves, Mammalia, Reptilia, Amphibia); familia derivada de las capturas ya cargadas; años desde 2026 hasta el actual.
+- Tarjetas de un solo color, sin rareza ni cartel NEW (no hay datos para eso).
+- Después: cambiar el proyecto de Expo SDK 57 a 58 (Expo Go instalado era del SDK 58) y corregir la barra de estado y la barra de tabs, que Android dejaba tapadas.
+
+Lo que se hizo:
+- Services: getMyCaptures en captures.service.js, getSpecies en species.service.js (los stubs que ya existían) y images.service.js (photoSource, speciesImageSource).
+- Componentes: CaptureTile y FilterBar. Pantallas: EncyclopediaScreen (paginación por scroll, filtros, contador) y SpeciesDetailScreen.
+- SDK 58: expo ^58.0.20, react 19.3.0, react-native 0.88.0, react-native-maps 1.29.11 y paquetes expo-* ~58 (npx expo install --fix); expo agregó el plugin expo-font a app.json.
+- Safe area: react-native-safe-area-context; SafeAreaProvider en App.js y su SafeAreaView en navigation/index.js y AuthLayout.js.
+- No verificado: sin pruebas en el teléfono ni contra el backend con datos; POST /captures todavía no guarda capturas, así que la galería sale vacía hasta cargarlas a mano.
+```

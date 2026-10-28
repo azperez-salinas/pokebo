@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-// TODO: validar campos contra la sección "Modelo de datos" del documento de diseño.
+// Campos según el modelo de datos del documento de diseño (+ class, que se usa para filtrar la enciclopedia).
 const speciesSchema = new mongoose.Schema(
   {
     commonName: { type: String, required: true },
@@ -8,11 +8,11 @@ const speciesSchema = new mongoose.Schema(
     family: { type: String, required: true },
     scientificName: { type: String, required: true, unique: true },
     description: { type: String },
-    diet: { type: String },
-    category: { type: String },
     habitat: { type: String },
-    funFact: { type: String },
+    diet: { type: String },
+    distribution: { type: String },
     conservationStatus: { type: String },
+    funFacts: { type: [String], default: [] },
   },
   { timestamps: true },
 );

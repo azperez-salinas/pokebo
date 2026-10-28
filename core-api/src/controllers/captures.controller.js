@@ -1,6 +1,5 @@
 const { AppError } = require('../utils/errors');
-
-const notImplemented = (req, res) => res.status(501).json({ code: 'NOT_IMPLEMENTED', message: 'TODO' });
+const capturesService = require('../services/captures.service');
 
 // PROVISIONAL: todavía no hay catálogo de especies ni reconocimiento real, así que toda captura
 // termina en SPECIES_NOT_RECOGNIZED sin escribir nada en Mongo ni en GridFS.
@@ -10,7 +9,16 @@ function create(req, res, next) {
   next(new AppError(422, 'SPECIES_NOT_RECOGNIZED', 'Hay un animal, pero no se pudo vincular con el catálogo de especies'));
 }
 
+async function listMine(req, res, next) {
+  try {
+    const result = await capturesService.listByUser(req.user.id, req.query);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   create,
-  listMine: notImplemented,
+  listMine,
 };

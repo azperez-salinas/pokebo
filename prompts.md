@@ -448,3 +448,26 @@ Lo que se hizo:
 - Edge: /captures/me y /species/:id con el forward existente; forwardImagen en forward.service.js (headersFirmados extraído para no duplicar la firma); ruta /images/:id.
 - Verificado solo con node --check; sin pruebas contra Mongo (Docker apagado). POST /captures sigue sin guardar y no hay seed de especies, así que la galería devuelve vacío hasta cargar datos.
 ```
+
+## 2026-10-27 — Frontend de la galería de capturas (colección)
+
+```text
+Resumen de los mensajes y decisiones (documento del proyecto y bocetos como referencia):
+
+Pedido: implementar el frontend de la galería basándose en la documentación adjunta. No tomar ninguna decisión sin consultar, evacuar dudas antes de desarrollar y no crear funciones nuevas que ya existan en el proyecto.
+
+Decisiones dadas:
+- Grilla: solo las capturas del usuario (GET /captures/me), sin casilleros "???" del boceto; contador captured/total tomado de meta.progress.
+- Pantallas: la galería va en el tab Colección (EncyclopediaScreen); al tocar una captura se abre SpeciesDetailScreen (GET /species/:id) dentro del mismo tab, con estado local y sin librería de navegación. MyCapturesScreen no se toca.
+- Fotos: GET /images/:id exige JWT, así que <Image> recibe un source con headers (token + X-App-Version + X-App-Platform). No renueva el token si vence a mitad de sesión.
+- Filtros: todos los que soporta el backend (clase, familia, año y mes) como un desplegable por filtro. Clase con las 4 del catálogo (Aves, Mammalia, Reptilia, Amphibia); familia derivada de las capturas ya cargadas; años desde 2026 hasta el actual.
+- Tarjetas de un solo color, sin rareza ni cartel NEW (no hay datos para eso).
+- Después: cambiar el proyecto de Expo SDK 57 a 58 (Expo Go instalado era del SDK 58) y corregir la barra de estado y la barra de tabs, que Android dejaba tapadas.
+
+Lo que se hizo:
+- Services: getMyCaptures en captures.service.js, getSpecies en species.service.js (los stubs que ya existían) y images.service.js (photoSource, speciesImageSource).
+- Componentes: CaptureTile y FilterBar. Pantallas: EncyclopediaScreen (paginación por scroll, filtros, contador) y SpeciesDetailScreen.
+- SDK 58: expo ^58.0.20, react 19.3.0, react-native 0.88.0, react-native-maps 1.29.11 y paquetes expo-* ~58 (npx expo install --fix); expo agregó el plugin expo-font a app.json.
+- Safe area: react-native-safe-area-context; SafeAreaProvider en App.js y su SafeAreaView en navigation/index.js y AuthLayout.js.
+- No verificado: sin pruebas en el teléfono ni contra el backend con datos; POST /captures todavía no guarda capturas, así que la galería sale vacía hasta cargarlas a mano.
+```

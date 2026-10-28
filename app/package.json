@@ -12,15 +12,16 @@
     "ios": "expo start --ios"
   },
   "dependencies": {
-    "expo": "~57.0.17",
-    "expo-camera": "~57.0.6",
-    "expo-file-system": "~57.0.7",
-    "expo-font": "~57.0.4",
-    "expo-image-manipulator": "~57.0.21",
-    "expo-location": "~57.0.22",
-    "expo-secure-store": "~57.0.4",
-    "react": "19.2.3",
-    "react-native": "0.86.3",
-    "react-native-maps": "1.27.2"
+    "expo": "^58.0.20",
+    "expo-camera": "~58.0.13",
+    "expo-file-system": "~58.0.12",
+    "expo-font": "~58.0.10",
+    "expo-image-manipulator": "~58.0.15",
+    "expo-location": "~58.0.19",
+    "expo-secure-store": "~58.0.2",
+    "react": "19.3.0",
+    "react-native": "0.88.0",
+    "react-native-maps": "1.29.11",
+    "react-native-safe-area-context": "~5.10.1"
   }
 }

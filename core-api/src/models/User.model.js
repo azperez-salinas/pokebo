@@ -6,6 +6,7 @@ const AVATARS = ['avatar_1', 'avatar_2', 'avatar_3', 'avatar_4', 'avatar_5', 'av
 const userSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, unique: true, trim: true },
+    bio: { type: String, maxlength: 150 },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
     avatar: { type: String, enum: AVATARS, default: 'avatar_1' },

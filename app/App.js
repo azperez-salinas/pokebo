@@ -30,6 +30,10 @@ function Root() {
   const { status, logout } = useAuth();
   const [fontsLoaded, fontError] = useFonts(fontSources);
 
+  if(fontError){
+    console.error('ERROR AL CARGAR FUENTES:', fontError);
+  }
+
   if (!fontsLoaded) {
     return fontError
       ? (
@@ -45,6 +49,7 @@ function Root() {
   if (status === 'signedIn') {
     return <MainNavigation onLogout={async () => {
       await logout();
+
       setScreen('welcome');
     }} />;
   }

@@ -15,3 +15,11 @@ export async function refresh(refreshToken) {
 export async function logout(refreshToken) {
   return request('/auth/logout', { method: 'POST', body: { refreshToken } });
 }
+
+export async function changePassword(accessToken, currentPassword, newPassword) {
+  return request('/auth/password', {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: { currentPassword, newPassword },
+  });
+}

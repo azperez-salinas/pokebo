@@ -7,6 +7,6 @@ const controller = require('../../controllers/captures.controller');
 const router = Router();
 
 router.post('/', auth, validate(schemas.create), controller.create);
-router.get('/me', auth, controller.listMine);
+router.get('/me', auth, validate({ query: schemas.listMine }), controller.listMine);
 
 module.exports = router;

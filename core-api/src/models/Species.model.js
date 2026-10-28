@@ -13,7 +13,6 @@ const speciesSchema = new mongoose.Schema(
     distribution: { type: String },
     conservationStatus: { type: String },
     funFacts: { type: [String], default: [] },
-    imagesIds: { type: [mongoose.Schema.Types.ObjectId], default: [] }, // archivos de GridFS
   },
   { timestamps: true },
 );

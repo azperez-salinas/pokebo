@@ -1,13 +1,23 @@
 import { request } from './api';
+import { authRequest, updateSessionUser } from './session';
 
 const authorized = (accessToken) => ({ Authorization: `Bearer ${accessToken}` });
 
-export async function getMe(accessToken) {
-  return request('/users/me', { headers: authorized(accessToken) });
+export async function getMe() {
+  return authRequest('/users/me');
 }
 
-export async function updateMe(accessToken, changes) {
-  return request('/users/me', { method: 'PATCH', headers: authorized(accessToken), body: changes });
+export async function updateMe(changes) {
+  const response = await authRequest('/users/me', {
+    method: 'PATCH',
+    body: changes,
+  });
+
+  if (response?.user) {
+    await updateSessionUser(response.user);
+  }
+
+  return response;
 }
 
 export async function updateMyLocation(lat, lng) {

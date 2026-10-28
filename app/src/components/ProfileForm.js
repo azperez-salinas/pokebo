@@ -6,7 +6,7 @@ import { updateMe } from '../services/users.service';
 
 const AVATARS = ['avatar_1', 'avatar_2', 'avatar_3', 'avatar_4', 'avatar_5', 'avatar_6'];
 
-export default function ProfileForm({ user, accessToken, onUserUpdated }) {
+export default function ProfileForm({ user, onUserUpdated }) {
   const [original, setOriginal] = useState(user);
   const [username, setUsername] = useState(user.username ?? '');
   const [bio, setBio] = useState(user.bio ?? '');
@@ -41,7 +41,7 @@ export default function ProfileForm({ user, accessToken, onUserUpdated }) {
 
     setSaving(true);
     try {
-      const { user: updated } = await updateMe(accessToken, changes);
+      const { user: updated } = await updateMe(changes);
       setOriginal(updated);
       setUsername(updated.username ?? '');
       setBio(updated.bio ?? '');
@@ -59,6 +59,13 @@ export default function ProfileForm({ user, accessToken, onUserUpdated }) {
 
   return (
     <View style={styles.panel}>
+      <View
+      style={styles.currentAvatar}
+      accessibilityLabel={`Avatar actual: ${original.avatar ?? 'avatar_1'}`}>
+        <Text style={styles.currentAvatarText}>
+        {(original.avatar ?? 'avatar_1').split('_')[1]}
+      </Text>
+      </View>
       <Text style={styles.body}>Explorador: {original.username}</Text>
       <View style={styles.field}>
         <Text style={styles.label}>USUARIO</Text>
@@ -101,6 +108,23 @@ const styles = StyleSheet.create({
   avatar: { width: 52, height: 52, backgroundColor: palette.linea, borderColor: palette.tinta, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
   avatarSelected: { backgroundColor: palette.cielo, borderColor: palette.azul, borderWidth: 4 },
   avatarText: { fontFamily: fonts.display, fontSize: 15, color: palette.tinta },
+  currentAvatar: {
+  width: 100,
+  height: 100,
+  alignSelf: 'center',
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: palette.cielo,
+  borderColor: palette.tinta,
+  borderWidth: 4,
+  borderRadius: 6,
+  borderBottomWidth: 8,
+  },
+  currentAvatarText: {
+    fontFamily: fonts.display,
+    fontSize: 32,
+    color: palette.azul,
+  },
   error: { fontFamily: fonts.body, fontSize: 22, color: palette.rosa, textAlign: 'center' },
   success: { fontFamily: fonts.body, fontSize: 22, color: palette.verde, textAlign: 'center' },
 });

@@ -3,6 +3,8 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import AuthButton from './AuthButton';
 import { palette, fonts } from '../styles';
 import { changePassword } from '../services/auth.service';
+import useAuth from '../hooks/useAuth';
+import { clearSession } from '../services/session';
 
 function PasswordField({ label, value, onChangeText, autoComplete, disabled }) {
   return (
@@ -22,6 +24,7 @@ export default function ChangePasswordForm({ accessToken }) {
   const [saving, setSaving] = useState(false);
   const [changed, setChanged] = useState(false);
   const [error, setError] = useState('');
+  //const { logout } = useAuth();
 
   async function save() {
     if (saving || changed) return;
@@ -42,11 +45,12 @@ export default function ChangePasswordForm({ accessToken }) {
     setSaving(true);
     try {
       await changePassword(accessToken, currentPassword, newPassword);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmation('');
-      setChanged(true);
-      // TODO authStore: invalidar sesión local y exigir un nuevo inicio de sesión.
+
+      // Sprint 2: cerrar la sesión usando AuthProvider.
+      await clearSession()
+
+      // AuthProvider notificará el cambio de sesión
+      // y App.js mostrará la pantalla de bienvenida.
     } catch (cause) {
       setError(cause.code === 'INVALID_CURRENT_PASSWORD'
         ? 'La contraseña actual es incorrecta.'

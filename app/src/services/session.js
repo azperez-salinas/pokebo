@@ -42,6 +42,28 @@ export async function saveSession({ user, accessToken, refreshToken }) {
   return current;
 }
 
+export async function updateSessionUser(user) {
+  if (!current) {
+    throw Object.assign(
+      new Error('Iniciá sesión para continuar.'),
+      { code: 'SESSION_ENDED' }
+    );
+  }
+
+  const sessionAtStart = current;
+
+  await SecureStore.setItemAsync(
+    KEYS.user,
+    JSON.stringify(user),
+    STORE_OPTIONS
+  );
+
+  if (current !== sessionAtStart) return;
+
+  current = { ...current, user };
+  notify();
+}
+
 export async function loadSession() {
   try {
     const [accessToken, refreshToken, user] = await Promise.all([

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import ProfileScreen from './ProfileScreen';
 import { palette, fonts } from '../styles';
 
-export default function SettingsScreen({ session, onUserUpdated, onLogout }) {
+export default function SettingsScreen({ onLogout }) {
   const [error, setError] = React.useState('');
   const [pending, setPending] = React.useState(false);
 
@@ -21,7 +21,7 @@ export default function SettingsScreen({ session, onUserUpdated, onLogout }) {
 
   return (
     <View style={styles.container}>
-      <ProfileScreen session={session} onUserUpdated={onUserUpdated} />
+      <ProfileScreen />
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
       <Pressable accessibilityRole="button" disabled={pending} onPress={signOut} style={styles.button}>
         <Text style={styles.label}>{pending ? 'CERRANDO...' : 'CERRAR SESIÓN'}</Text>

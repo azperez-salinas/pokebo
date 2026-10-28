@@ -5,9 +5,12 @@ import ProfileForm from '../components/ProfileForm';
 import ChangePasswordForm from '../components/ChangePasswordForm';
 import { palette, fonts } from '../styles';
 import { getMe } from '../services/users.service';
+import useAuth from '../hooks/useAuth';
+import { getSession } from '../services/session';
 
-export default function ProfileScreen({ session, onUserUpdated }) {
-  const token = session?.accessToken;
+export default function ProfileScreen() {
+  const { status } = useAuth();
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,29 +18,41 @@ export default function ProfileScreen({ session, onUserUpdated }) {
 
   useEffect(() => {
     let active = true;
+
     setLoading(true);
     setError('');
     setUser(null);
 
-    if (!token) {
-      setError('No hay una sesión autenticada.');
+    if (status !== 'signedIn') {
       setLoading(false);
-      return () => { active = false; };
+      return () => {
+        active = false;
+      };
     }
 
-    getMe(token)
+    getMe()
       .then(({ user: currentUser }) => {
-        if (active) setUser(currentUser);
+        if (active) {
+          setUser(currentUser);
+        }
       })
       .catch((cause) => {
-        if (active) setError(cause.message || 'No se pudo cargar el perfil.');
+        if (active) {
+          setError(
+            cause.message || 'No se pudo cargar el perfil.'
+          );
+        }
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       });
 
-    return () => { active = false; };
-  }, [token]);
+    return () => {
+      active = false;
+    };
+  }, [status]);
 
   if (loading) {
     return (
@@ -49,19 +64,44 @@ export default function ProfileScreen({ session, onUserUpdated }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.title}>MI PERFIL</Text>
-      {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-      {user && (showPasswordForm
-        ? <ChangePasswordForm accessToken={token} />
-        : <ProfileForm user={user} accessToken={token} onUserUpdated={(updated) => {
-          setUser(updated);
-          onUserUpdated?.(updated);
-        }} />)}
+
+      {error ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {error}
+        </Text>
+      ) : null}
+
       {user && (
-        <AuthButton color="yellow"
-          label={showPasswordForm ? 'VOLVER AL PERFIL' : 'CAMBIAR CONTRASEÑA'}
-          onPress={() => setShowPasswordForm((current) => !current)} />
+        showPasswordForm ? (
+          <ChangePasswordForm
+            accessToken={getSession()?.accessToken}
+          />
+        ) : (
+          <ProfileForm
+            user={user}
+            onUserUpdated={setUser}
+          />
+        )
+      )}
+
+      {user && (
+        <AuthButton
+          color="yellow"
+          label={
+            showPasswordForm
+              ? 'VOLVER AL PERFIL'
+              : 'CAMBIAR CONTRASEÑA'
+          }
+          onPress={() =>
+            setShowPasswordForm((current) => !current)
+          }
+        />
       )}
     </ScrollView>
   );

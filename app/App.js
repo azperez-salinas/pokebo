@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { useFonts } from 'expo-font';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import styles, { colors, fontSources } from './src/styles';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
@@ -11,9 +12,11 @@ import useAuth from './src/hooks/useAuth';
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Root />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <Root />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 
@@ -30,6 +33,10 @@ function Root() {
   const { status, logout } = useAuth();
   const [fontsLoaded, fontError] = useFonts(fontSources);
 
+  if(fontError){
+    console.error('ERROR AL CARGAR FUENTES:', fontError);
+  }
+
   if (!fontsLoaded) {
     return fontError
       ? (
@@ -45,6 +52,7 @@ function Root() {
   if (status === 'signedIn') {
     return <MainNavigation onLogout={async () => {
       await logout();
+
       setScreen('welcome');
     }} />;
   }

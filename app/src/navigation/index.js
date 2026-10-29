@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Pressable, SafeAreaView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MapScreen from '../screens/MapScreen';
 import EncyclopediaScreen from '../screens/EncyclopediaScreen';
 import CameraScreen from '../screens/CameraScreen';
@@ -17,13 +18,13 @@ const tabs = [
 ];
 
 // Pantalla principal para montar cuando exista una sesión autenticada.
-export default function MainNavigation({ onLogout }) {
+export default function MainNavigation({ session, onUserUpdated, onLogout }) {
   const [activeTab, setActiveTab] = useState('map');
   const { Screen } = tabs.find((tab) => tab.id === activeTab);
 
   return (
     <SafeAreaView style={styles.screen}>
-      <Screen onLogout={onLogout} />
+      <Screen session={session} onUserUpdated={onUserUpdated} onLogout={onLogout} onNavigate={setActiveTab} />
       <View style={styles.tabBar}>
         {tabs.map(({ id, label }) => {
           const selected = id === activeTab;

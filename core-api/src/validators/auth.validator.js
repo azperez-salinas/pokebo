@@ -3,8 +3,10 @@ const { AVATARS } = require('../models/User.model');
 
 const PASSWORD_MIN_LENGTH = 8;
 
+const username = Joi.string().trim().required();
+
 const register = Joi.object({
-  username: Joi.string().trim().required(),
+  username,
   email: Joi.string().email().required(),
   avatar: Joi.string().valid(...AVATARS),
   password: Joi.string().min(PASSWORD_MIN_LENGTH).required(),
@@ -12,7 +14,7 @@ const register = Joi.object({
 
 // Solo credenciales: cualquier otro campo se descarta
 const login = Joi.object({
-  username: Joi.string().trim().required(),
+  username,
   password: Joi.string().required(),
 });
 
@@ -39,4 +41,4 @@ const logout = Joi.object({
   refreshToken: Joi.string().required(),
 });
 
-module.exports = { register, login, changePassword, refresh, forgotPassword, resetPassword, logout};
+module.exports = { username, register, login, changePassword, refresh, forgotPassword, resetPassword, logout};

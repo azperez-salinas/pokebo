@@ -11,12 +11,13 @@ const sightingSchema = new mongoose.Schema(
       coordinates: { type: [Number], required: true }, // [lng, lat]
     },
     h3Index: { type: String },
-    seenAt: { type: Date, default: Date.now },
+    seenAt: { type: Date, default: Date.now }, // cuándo se vio el animal
+    expiresAt: { type: Date, required: true }, // cuándo se borra el avistamiento (índice TTL)
   },
   { timestamps: true },
 );
 
 sightingSchema.index({ location: '2dsphere' });
-sightingSchema.index({ seenAt: 1,}, { expireAfterSeconds: 3600*24 }); // Expira después de 24 horas 
+sightingSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // Mongo lo borra al llegar a expiresAt
 
 module.exports = mongoose.model('Sighting', sightingSchema);

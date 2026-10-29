@@ -24,15 +24,33 @@ async function getById(userId) {
 
 // Actualiza solo los campos recibidos. settings se aplica campo a campo para no pisar el resto.
 async function updateMe(userId, changes) {
-  const { settings, ...fields } = changes;
-  const $set = { ...fields };
+  const current = await User.findById(userId);
+  if (!current) throw userNotFound();
+
+  const { username, bio, avatar, settings } = changes;
+  const $set = {};
+  if(username !== undefined) {
+    if(username !== current.username && await User.exists({ username, _id: {$ne: userId} })){
+      throw new AppError(409, 'USERNAME_TAKEN', 'El nombre de usuario ya está en uso');
+    }
+    $set.username = username;
+  }
+  if (bio !== undefined) $set.bio = bio;
+  if (avatar !== undefined) $set.avatar = avatar;
   for (const [key, value] of Object.entries(settings || {})) {
     $set[`settings.${key}`] = value;
   }
+  try {
+    const user = await User.findByIdAndUpdate(userId, { $set }, { new: true, runValidators: true });
+    if (!user) throw userNotFound();
+    return toPublicUser(user);
+  } catch (err) {
+    if (err.code === 11000 && (err.keyPattern?.username || err.keyValue?.username)) {
+      throw new AppError(409, 'USERNAME_TAKEN', 'El nombre de usuario ya está en uso');
+    }
+    throw err;
 
-  const user = await User.findByIdAndUpdate(userId, { $set }, { new: true, runValidators: true });
-  if (!user) throw userNotFound();
-  return toPublicUser(user);
+  }
 }
 
 // Registra (o actualiza) el token push del dispositivo del usuario.

@@ -471,3 +471,45 @@ Lo que se hizo:
 - Safe area: react-native-safe-area-context; SafeAreaProvider en App.js y su SafeAreaView en navigation/index.js y AuthLayout.js.
 - No verificado: sin pruebas en el teléfono ni contra el backend con datos; POST /captures todavía no guarda capturas, así que la galería sale vacía hasta cargarlas a mano.
 ```
+
+## 2026-10-28 — Integración con GPT y endpoint POST /captures
+
+```text
+Resumen de los mensajes y decisiones (documento de diseño y diagrama de flujo como referencia):
+
+Pedido: implementar la integración con la IA para identificar los animales y desarrollar el endpoint de capturar animal ("cómo harías para implementarlo con gpt?"). No tomar ninguna decisión sin consultar, evacuar dudas antes de desarrollar y no crear funciones nuevas que ya existan en el proyecto. Rama feature/20-21-api-endpoint-capturar.
+
+Decisiones dadas:
+- Cliente de GPT: fetch nativo a chat/completions, sin SDK. Modelo desde la variable AI_MODEL (gpt-4o-mini en .env.example).
+- Alcance: además de la captura, crear el sighting (avistamiento) y calcular h3Index con h3-js; achievements y push quedan como TODO.
+- H3 con resolución 8. Sighting con expiresAt (captura + 24 h) y el índice TTL movido ahí; seenAt solo informa cuándo se vio.
+- Vínculo con el catálogo: campo scientificNameNormalized (sin tildes, minúsculas, sin espacios extra) con índice único; el seed lo completa.
+- Umbrales: isAnimal=false o screenProbability >= 0.5 -> 422 NO_ANIMAL_DETECTED; animalProbability < 0.5 o especie fuera del catálogo -> 422 SPECIES_NOT_RECOGNIZED; fallo, timeout (12 s) o respuesta inválida de la IA -> 503 IDENTIFICATION_UNAVAILABLE.
+- isNewSpecies en Capture: true si el usuario no tenía antes esa especie.
+
+Lo que se hizo:
+- Edge: ai.service.js con el prompt (PROMPT), el JSON Schema estricto de la respuesta (RESPONSE_FORMAT) y validación de la respuesta como entrada no confiable; config aiModel.
+- Core: captures.service.create (revalida umbrales, vincula especie, sube la foto a GridFS, crea captura y sighting, deshace todo si falla), location.service.latLngToCell, sightings.service.createFromCapture, utils/normalizeScientificName, cambios en los modelos Species, Capture y Sighting, y h3-js como dependencia.
+- Seed de especies: scientificNameNormalized e índice único.
+- Verificado con fetch simulado y validando los modelos sin base de datos; no probado contra Mongo real ni contra OpenAI.
+```
+
+## 2026-10-28 — Frontend de la captura (cámara y resultado)
+
+```text
+Resumen de los mensajes y decisiones (bocetosPokeBo.pdf, páginas 4 y 5, y app/src/styles como referencia):
+
+Pedido: implementar el frontend de la pantalla de captura: la vista previa antes de sacar la foto, el estado durante el envío y, después, un resumen con la foto obtenida y los datos del animal. No tomar ninguna decisión sin consultar, evacuar dudas antes de desarrollar y no crear funciones nuevas que ya existan en el proyecto.
+
+Decisiones dadas:
+- Datos del resultado: solo lo que ya devuelve POST /captures (nombre común, científico, confianza, isNewSpecies); sin rareza ni backend nuevo.
+- Se omite el N.º de especie del boceto (no existe en el modelo).
+- SIGUIENTE abre el tab Colección; OTRA FOTO vuelve a la cámara.
+- Cámara: botón rosa de atrás va al Mapa, botón de la huella va a la Colección; el chip "GPS ON" no va.
+
+Lo que se hizo:
+- CameraScreen: panel "APUNTÁ AL ANIMAL", marco de 4 esquinas, botones circulares/cuadrado con los recursos de styles; botones deshabilitados con spinner mientras se envía.
+- CaptureResultScreen: título con estrellas, foto con etiqueta NUEVA, nombre, nombre científico y barra de confianza; los errores se mantienen por code.
+- Componente Panel (contorno de tinta, borde suave y sombra) y prop onNavigate en navigation/index.js para cambiar de tab.
+- Verificada solo la sintaxis; sin pruebas en el teléfono ni contra el backend.
+```

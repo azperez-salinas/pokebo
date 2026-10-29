@@ -24,7 +24,7 @@ export default function MainNavigation({ session, onUserUpdated, onLogout }) {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <Screen session={session} onUserUpdated={onUserUpdated} onLogout={onLogout} />
+      <Screen session={session} onUserUpdated={onUserUpdated} onLogout={onLogout} onNavigate={setActiveTab} />
       <View style={styles.tabBar}>
         {tabs.map(({ id, label }) => {
           const selected = id === activeTab;

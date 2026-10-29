@@ -12,6 +12,7 @@ const captureSchema = new mongoose.Schema(
       coordinates: { type: [Number], required: true }, // [lng, lat]
     },
     h3Index: { type: String },
+    isNewSpecies: { type: Boolean, default: false }, // primera captura de esa especie para el usuario
     capturedAt: { type: Date, default: Date.now },
   },
   { timestamps: true },

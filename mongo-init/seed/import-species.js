@@ -16,6 +16,11 @@ const FIELDS = [
 ];
 const FIELDS_SET = new Set(FIELDS);
 
+// Misma regla que core-api/src/utils/normalizeScientificName.js (minusculas, sin tildes, sin espacios extra)
+function normalizeScientificName(name) {
+  return name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
 function fail(message) {
   throw new Error(message);
 }
@@ -78,7 +83,7 @@ async function run() {
       updateOne: {
         filter: { scientificName: item.scientificName },
         update: {
-          $set: { ...item, updatedAt: now },
+          $set: { ...item, scientificNameNormalized: normalizeScientificName(item.scientificName), updatedAt: now },
           $setOnInsert: { createdAt: now },
         },
         upsert: true,
@@ -90,6 +95,9 @@ async function run() {
     modified += result.modifiedCount;
     print('Lote ' + (Math.floor(offset / BATCH_SIZE) + 1) + ' completado (' + Math.min(offset + BATCH_SIZE, items.length) + '/' + items.length + ').');
   }
+
+  // Despues de la carga: antes de ella, las especies ya existentes no tienen el campo y el indice unico fallaria.
+  await collection.createIndex({ scientificNameNormalized: 1 }, { unique: true });
 
   print('Importacion exitosa en ' + DB_NAME + '.' + COLLECTION_NAME);
   print('Nuevas: ' + inserted + '; existentes: ' + matched + '; modificadas: ' + modified + '.');

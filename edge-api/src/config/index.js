@@ -6,6 +6,7 @@ const config = {
   jwtPublicKey: process.env.JWT_PUBLIC_KEY ? process.env.JWT_PUBLIC_KEY.replace(/\\n/g, '\n') : undefined,
   serviceSharedSecret: process.env.SERVICE_SHARED_SECRET,
   aiProviderApiKey: process.env.AI_PROVIDER_API_KEY,
+  aiModel: process.env.AI_MODEL,
   firebaseCredentials: process.env.FIREBASE_CREDENTIALS,
 };
 

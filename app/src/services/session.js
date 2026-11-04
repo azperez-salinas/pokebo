@@ -116,6 +116,10 @@ async function refreshSession() {
           await clearSession();
           throw Object.assign(new Error('Tu sesión expiró. Iniciá sesión de nuevo.'), { code: 'SESSION_ENDED' });
         }
+        if (error.status === 404 && error.code === 'USER_NOT_FOUND') {
+          await clearSession();
+          throw Object.assign(new Error('Tu cuenta ya no existe. Iniciá sesión de nuevo.'), { code: 'SESSION_ENDED' });
+        }
         throw error;
       }
     })().finally(() => {
@@ -127,13 +131,27 @@ async function refreshSession() {
 
 // Request autenticada: ante cualquier 401 se renueva el token UNA sola vez y se reintenta.
 // Si el refresh falla, se borran los tokens y el store vuelve al login.
+// Si el usuario ya no existe en el servidor (ej. se borró la base) los tokens guardados siguen siendo válidos
+// pero la cuenta no: el servidor contesta 404 USER_NOT_FOUND, no 401. No hay nada que renovar, se vuelve al login.
+async function endSessionIfUserGone(error) {
+  if (error.status !== 404 || error.code !== 'USER_NOT_FOUND') return;
+  await clearSession();
+  throw Object.assign(new Error('Tu cuenta ya no existe. Iniciá sesión de nuevo.'), { code: 'SESSION_ENDED' });
+}
+
 export async function authRequest(path, options = {}) {
   if (!current) throw Object.assign(new Error('Iniciá sesión para continuar.'), { code: 'SESSION_ENDED' });
   try {
     return await request(path, { ...options, token: current.accessToken });
   } catch (error) {
+    await endSessionIfUserGone(error);
     if (error.status !== 401) throw error;
     const renewed = await refreshSession();
-    return request(path, { ...options, token: renewed.accessToken });
+    try {
+      return await request(path, { ...options, token: renewed.accessToken });
+    } catch (retryError) {
+      await endSessionIfUserGone(retryError);
+      throw retryError;
+    }
   }
 }

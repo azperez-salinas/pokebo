@@ -6420,6 +6420,18 @@
     "funFact": "Nada entre juncales y se alimenta de plantas de los bañados."
   },
   {
+    "commonName": "ser humano",
+    "class": "Mammalia",
+    "family": "Hominidae",
+    "scientificName": "Homo sapiens",
+    "description": "Primate bípedo de postura erguida, con cerebro grande, manos hábiles y poco pelaje en el cuerpo.",
+    "diet": "Omnívoro: frutos, verduras, cereales, carne y pescado.",
+    "category": "comun",
+    "habitat": "Prácticamente todos los ambientes, sobre todo ciudades, pueblos y zonas rurales.",
+    "conservationStatus": "Preocupación menor",
+    "funFact": "Es la única especie del catálogo que sabe sacar fotos con un celular."
+  },
+  {
     "commonName": "capibara, carpincho",
     "class": "Mammalia",
     "family": "Caviidae",

@@ -158,7 +158,7 @@ Si la app muestra `No se pudo conectar al servidor. Revisá la URL del Edge API 
 
 ## Cargar especies en MongoDB
 
-El catálogo inicial de 670 especies se encuentra en `mongo-init/seed/species.json`.
+El catálogo inicial de 671 especies se encuentra en `mongo-init/seed/species.json`.
 
 Con MongoDB levantado, ejecutar desde la raíz del proyecto:
 
@@ -180,7 +180,7 @@ Ingresar la contraseña configurada en `MONGO_APP_PASSWORD` y ejecutar:
 db.species.countDocuments({})
 ```
 
-El resultado esperado es `670`.
+El resultado esperado es `671`.
 
 ## Verificación de correo al registrarse
 

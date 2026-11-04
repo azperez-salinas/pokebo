@@ -42,20 +42,22 @@ export default function CameraScreen({ onNavigate }) {
   const { getCurrentPosition } = useLocation();
   const [ready, setReady] = useState(false);
   const [sending, setSending] = useState(false);
+  const [frozenUri, setFrozenUri] = useState(null); // la foto recién sacada, se muestra encima de la cámara mientras se identifica
   const [outcome, setOutcome] = useState(null); // { result } o { error }
 
   async function capture() {
     if (sending || !ready) return; // evita envíos dobles
     setSending(true);
     try {
-      const position = await getCurrentPosition();
-      const photo = await takePhoto();
+      // La ubicación se pide en paralelo: antes se esperaba el GPS antes de sacar la foto y el botón parecía colgado.
+      const [photo, position] = await Promise.all([takePhoto(setFrozenUri), getCurrentPosition()]);
       const result = await createCapture({ uri: photo.uri, ...position });
       setOutcome({ result });
     } catch (error) {
       setOutcome({ error });
     } finally {
       setSending(false);
+      setFrozenUri(null);
     }
   }
 
@@ -93,6 +95,9 @@ export default function CameraScreen({ onNavigate }) {
   return (
     <View style={local.container}>
       <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" onCameraReady={() => setReady(true)} />
+      {frozenUri ? (
+        <Image source={{ uri: frozenUri }} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityLabel="Foto sacada" />
+      ) : null}
 
       <View style={local.hint} pointerEvents="none">
         <Panel>

@@ -533,3 +533,41 @@ Lo que se hizo:
 - Tests: app/test/h3Overlay.test.js usa una región de 0,003; core-api/test/location.service.test.js toma la resolución de utils/h3 en vez de tener el 8 fijo.
 - Verificado con los tests de la app (24) y del Core (18). Sin pruebas en el teléfono. Los datos guardados con otra resolución (avistamientos, capturas, ubicaciones) quedan con un h3Index que ya no coincide y hay que borrarlos o volver a crearlos.
 ```
+
+## 2026-11-04 — Homo sapiens en el catálogo y foto congelada al capturar
+
+```text
+Resumen de los mensajes y decisiones (captura de pantalla de "No reconocimos la especie" y log de la respuesta de la IA como referencia):
+
+Pedido: agregar al catálogo de especies al Homo sapiens sapiens. Después, al probar la captura: la app respondía "No reconocimos la especie", la foto tardaba mucho en sacarse y la cámara seguía mostrando imagen en vivo con el círculo de carga, sin saber si la foto se había sacado. Se pidió que al tocar el botón de la cámara la imagen se congele o aparezca la foto tomada.
+
+Decisiones dadas:
+- Nombre científico: el pedido inicial fue "Homo sapiens sapiens". La IA responde "Homo sapiens" (isAnimal true, animalProbability 0.99) y el Core compara el nombre normalizado exacto, así que el catálogo pasó a "Homo sapiens" (no se tocó el prompt de la IA).
+- La foto congelada se muestra durante el envío y se quita al terminar o fallar.
+
+Lo que se hizo:
+- mongo-init/seed/species.json: nueva entrada "ser humano" (Mammalia, Hominidae, categoría comun, Preocupación menor), entre Holochilus vulpinus y Hydrochoerus hydrochaeris. El conteo pasó de 670 a 671 (README.md y comentario de import-species.js). Para que quede en la base hay que volver a ejecutar import-species.js con mongosh y borrar a mano el registro "Homo sapiens sapiens" si ya se había importado.
+- app/src/screens/CameraScreen.js: la ubicación y la foto se piden en paralelo (Promise.all); antes se esperaba el GPS antes de sacar la foto. Nuevo estado frozenUri: la foto recién sacada se dibuja encima de la CameraView mientras se identifica.
+- app/src/hooks/useCamera.js: takePhoto(onTaken) avisa con la uri apenas la cámara captura, antes de comprimir a JPEG.
+- Verificado con los tests de la app (24, que no cubren la cámara). Sin pruebas en el teléfono. La compresión y la llamada a la IA (hasta 12 s) siguen igual.
+```
+
+## 2026-11-04 — Sesión de una cuenta que ya no existe
+
+```text
+Resumen de los mensajes y decisiones (app/src/services/session.js y app/src/store/authStore.js como referencia):
+
+Pedido: después de borrar el volumen de Docker y reiniciar Expo con npm start -c, la app arrancaba en el mapa y, al ir a la sesión, mostraba "Usuario no encontrado". Debería levantar en el inicio de sesión o registro. Pregunta: ¿es Expo, Docker o algo interno?
+
+Diagnóstico: es interno de la app. Los tokens viven en SecureStore (Keystore de Android, dentro de Expo Go), y ni expo start -c (solo limpia la caché de Metro) ni borrar el volumen los tocan. El access token sigue firmado y vigente, pero el usuario ya no está en Mongo: el servidor responde 404 USER_NOT_FOUND, no 401, y authRequest solo cerraba la sesión ante un 401.
+
+Decisiones dadas:
+- Un 404 USER_NOT_FOUND se trata como sesión terminada (borra los tokens y lanza SESSION_ENDED), igual que un refresh token rechazado.
+- Además, verificar la sesión guardada apenas se abre la app, con un pedido autenticado liviano, para que vuelva al login de inmediato y no recién con el primer pedido. Se reutiliza getMe (GET /users/me) en vez de crear otro.
+- Si la verificación falla por red o timeout, se mantiene la sesión guardada (la app tiene que seguir abriendo sin conexión).
+
+Lo que se hizo:
+- app/src/services/session.js: endSessionIfUserGone en authRequest (primer pedido y reintento tras renovar) y el mismo chequeo en refreshSession.
+- app/src/store/authStore.js: verifyStoredSession corre al cargar una sesión guardada; llama a getMe y, si responde, actualiza el usuario de la sesión (updateSessionUser), lo que también refresca settings.nearbyAlerts.
+- Verificado con los tests de la app (24, que no cubren este flujo). Sin pruebas en el teléfono.
+```

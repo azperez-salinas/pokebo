@@ -60,7 +60,7 @@ function loadAndValidate() {
 }
 
 async function run() {
-  // Validar los 670 registros ANTES de escribir el primero.
+  // Validar los 671 registros ANTES de escribir el primero.
   const items = loadAndValidate();
   print('Archivo validado: ' + items.length + ' especies, sin duplicados ni campos invalidos.');
 

@@ -28,7 +28,16 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (credentials) => session.saveSession(await authService.login(credentials)), []);
 
-  const register = useCallback(async (data) => session.saveSession(await authService.register(data)), []);
+  // Iniciar el registro no crea una sesion. Solo verificar el codigo emite y guarda tokens.
+  const register = useCallback((data) => authService.register(data), []);
+  const verifyRegistration = useCallback(
+    async (challengeId, code) => session.saveSession(await authService.verifyRegistration(challengeId, code)),
+    [],
+  );
+  const resendRegistration = useCallback(
+    (challengeId) => authService.resendRegistration(challengeId),
+    [],
+  );
 
   // Revoca el refresh token en el servidor y borra el almacenamiento seguro aunque la llamada falle
   const logout = useCallback(async () => {
@@ -40,7 +49,10 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const value = useMemo(() => ({ status, user, login, register, logout }), [status, user, login, register, logout]);
+  const value = useMemo(
+    () => ({ status, user, login, register, verifyRegistration, resendRegistration, logout }),
+    [status, user, login, register, verifyRegistration, resendRegistration, logout],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

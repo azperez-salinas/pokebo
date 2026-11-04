@@ -27,7 +27,7 @@ function Field({ label, value, onChangeText, ...props }) {
   );
 }
 
-export default function AuthForm({ mode, onBack, onSwitch }) {
+export default function AuthForm({ mode, onBack, onSwitch, onRegistrationStarted }) {
   const { login, register } = useAuth();
   const isRegister = mode === 'register';
   const [username, setUsername] = useState('');
@@ -70,9 +70,12 @@ export default function AuthForm({ mode, onBack, onSwitch }) {
     setSubmitting(true);
     try {
       // Al guardarse la sesión, App pasa sola a la pantalla principal (useAuth)
-      await (isRegister
-        ? register({ username: user, email: mail, password })
-        : login({ username: user, password }));
+      if (isRegister) {
+        const pending = await register({ username: user, email: mail, password });
+        onRegistrationStarted?.(pending);
+      } else {
+        await login({ username: user, password });
+      }
     } catch (cause) {
       setError(cause.message || 'No se pudo completar la solicitud.');
     } finally {

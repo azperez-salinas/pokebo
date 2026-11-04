@@ -18,6 +18,7 @@ const sightingSchema = new mongoose.Schema(
 );
 
 sightingSchema.index({ location: '2dsphere' });
+sightingSchema.index({ h3Index: 1, expiresAt: 1 }); // avisos de cercanía: se consulta por celdas H3
 sightingSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // Mongo lo borra al llegar a expiresAt
 
 module.exports = mongoose.model('Sighting', sightingSchema);

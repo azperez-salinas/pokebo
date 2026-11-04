@@ -18,4 +18,9 @@ const pushToken = Joi.object({
   platform: Joi.string().valid('ios', 'android').required(),
 });
 
-module.exports = { updateMe, pushToken };
+// El cliente en segundo plano solo informa la celda H3 (resolución 8) donde está, nunca sus coordenadas.
+const location = Joi.object({
+  h3Index: Joi.string().pattern(/^[0-9a-f]{15}$/).required(),
+});
+
+module.exports = { updateMe, pushToken, location };

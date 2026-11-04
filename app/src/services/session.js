@@ -85,6 +85,20 @@ export async function clearSession() {
   notify();
 }
 
+// La app puede estar corriendo en dos contextos a la vez (la pantalla y la tarea de ubicación en segundo plano) y el
+// servidor rota el refresh token en cada uso. Si el que usamos ya lo rotó el otro contexto, en el almacenamiento seguro
+// hay uno nuevo: se adopta esa sesión en vez de cerrarla. Se reintenta porque el otro contexto puede estar guardándolo.
+const ADOPT_RETRY_DELAYS_MS = [0, 500, 1500];
+
+async function adoptNewerStoredSession(usedRefreshToken) {
+  for (const delay of ADOPT_RETRY_DELAYS_MS) {
+    if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+    const stored = await loadSession();
+    if (stored && stored.refreshToken !== usedRefreshToken) return stored;
+  }
+  return null;
+}
+
 // Renueva el access token con el refresh token (que el servidor rota). Si el servidor lo rechaza, la sesión
 // se termina; si el problema es de red, se mantiene la sesión y se propaga el error.
 async function refreshSession() {
@@ -97,6 +111,8 @@ async function refreshSession() {
         return await saveSession({ user: renewed.user ?? current?.user, ...renewed });
       } catch (error) {
         if (error.status === 401 || error.status === 400) {
+          const adopted = await adoptNewerStoredSession(refreshToken);
+          if (adopted) return adopted;
           await clearSession();
           throw Object.assign(new Error('Tu sesión expiró. Iniciá sesión de nuevo.'), { code: 'SESSION_ENDED' });
         }

@@ -20,7 +20,8 @@ export async function updateMe(changes) {
   return response;
 }
 
-export async function updateMyLocation(lat, lng) {
-  // TODO
-  throw new Error('not implemented');
+// PUT /users/me/location: informa la celda H3 donde está el usuario (nunca sus coordenadas).
+// Devuelve { nearby }: avistamientos de otros usuarios en su celda y las vecinas que todavía no se le avisaron.
+export async function updateMyLocation(h3Index) {
+  return authRequest('/users/me/location', { method: 'PUT', body: { h3Index } });
 }

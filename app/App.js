@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import './src/tasks/locationTask'; // registra la tarea de ubicación en segundo plano al cargar la app
 import styles, { colors, fontSources } from './src/styles';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
@@ -9,6 +10,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import MainNavigation from './src/navigation';
 import { AuthProvider } from './src/store/authStore';
 import useAuth from './src/hooks/useAuth';
+import useNearbyAlertsSync from './src/hooks/useNearbyAlertsSync';
 
 export default function App() {
   return (
@@ -30,7 +32,8 @@ function Loading({ label }) {
 
 function Root() {
   const [screen, setScreen] = useState('welcome');
-  const { status, logout } = useAuth();
+  const { status, user, logout } = useAuth();
+  useNearbyAlertsSync(status, user);
   const [fontsLoaded, fontError] = useFonts(fontSources);
 
   if(fontError){

@@ -13,6 +13,8 @@ router.post('/registrations', validate(schemas.register), controller.startRegist
 router.post('/registrations/verify', validate(schemas.verifyRegistration), controller.verifyRegistration);
 router.post('/registrations/resend', validate(schemas.resendRegistration), controller.resendRegistration);
 router.post('/login', validate(schemas.login), controller.login);
+router.post('/login/verify', validate(schemas.verifyLogin), controller.verifyLogin);
+router.post('/login/resend', validate(schemas.resendLogin), controller.resendLogin);
 router.put('/password', auth, validate(schemas.changePassword), controller.changePassword);
 router.post('/refresh', validate(schemas.refresh), controller.refresh);
 // Logout sin auth: el access token puede haber vencido, lo que se revoca es el refresh token del body

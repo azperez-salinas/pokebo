@@ -118,7 +118,9 @@ async function start(data) {
 
   return {
     public: publicResponse(challengeId),
-    delivery: decoy ? null : { email, code, challengeId, expiresIn: config.registrationCodeTtl },
+    delivery: decoy ? null : {
+      purpose: 'registration', email, code, challengeId, expiresIn: config.registrationCodeTtl,
+    },
   };
 }
 
@@ -236,7 +238,9 @@ async function resend(challengeId) {
     return {
       public: publicResponse(challengeId),
       delivery: pending.kind === 'real'
-        ? { email: pending.email, code, challengeId, expiresIn: config.registrationCodeTtl }
+        ? {
+          purpose: 'registration', email: pending.email, code, challengeId, expiresIn: config.registrationCodeTtl,
+        }
         : null,
     };
   } finally {

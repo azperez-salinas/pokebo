@@ -6,7 +6,7 @@ export default function RegisterScreen({ onBack, onLogin }) {
   const [pending, setPending] = useState(null);
 
   if (pending) {
-    return <EmailVerificationForm pending={pending} onBack={() => setPending(null)} />;
+    return <EmailVerificationForm pending={pending} purpose="registration" onBack={() => setPending(null)} />;
   }
 
   return (

@@ -8,11 +8,13 @@ const controller = require('../../controllers/auth.controller');
 const router = Router();
 
 // register, login, refresh, forgot-password y reset-password NO pasan por auth.middleware (refresh se pide justamente cuando el access token ya no sirve)
-router.post('/register', appVersion, rateLimit.registration, controller.registrationWithEmail);
-router.post('/registrations', appVersion, rateLimit.registration, controller.registrationWithEmail);
+router.post('/register', appVersion, rateLimit.registration, controller.forwardWithEmailDelivery);
+router.post('/registrations', appVersion, rateLimit.registration, controller.forwardWithEmailDelivery);
 router.post('/registrations/verify', appVersion, rateLimit.registration, forward);
-router.post('/registrations/resend', appVersion, rateLimit.registration, controller.registrationWithEmail);
-router.post('/login', appVersion, rateLimit, forward);
+router.post('/registrations/resend', appVersion, rateLimit.registration, controller.forwardWithEmailDelivery);
+router.post('/login', appVersion, rateLimit.login, controller.forwardWithEmailDelivery);
+router.post('/login/verify', appVersion, rateLimit.login, forward);
+router.post('/login/resend', appVersion, rateLimit.login, controller.forwardWithEmailDelivery);
 router.put('/password', appVersion, auth, rateLimit, forward);
 router.post('/refresh', appVersion, rateLimit, forward);
 router.post('/forgot-password', appVersion, rateLimit, forward);

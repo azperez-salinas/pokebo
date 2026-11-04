@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, ImageBackground, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import * as Location from 'expo-location';
 import MapView, { Polygon } from 'react-native-maps';
 import AuthButton from '../components/AuthButton';
 import useLocation from '../hooks/useLocation';
@@ -9,7 +10,10 @@ import { buttons, colors, fonts, icons, palette } from '../styles';
 
 // Sin ubicación, el mapa arranca en Montevideo
 const DEFAULT_REGION = { latitude: -34.9011, longitude: -56.1645, latitudeDelta: 0.08, longitudeDelta: 0.08 };
-const USER_DELTA = 0.01;
+// ~330 m de alto: con celdas de ~28 m el overlay solo dibuja si el mapa está así de cerca
+const USER_DELTA = 0.003;
+// Cada cuántos metros se recalcula la celda del usuario con el mapa abierto (las celdas miden ~28 m)
+const WATCH_DISTANCE_METERS = 5;
 
 // Estilo de cada hexágono del overlay de desarrollo
 function hexStyle(hex) {
@@ -37,6 +41,7 @@ export default function MapScreen() {
 
   // Overlay H3 (solo desarrollo)
   const [userCell, setUserCell] = useState(null);
+  const [fix, setFix] = useState(null); // última lectura del GPS (solo para el panel de desarrollo)
   const [showHexes, setShowHexes] = useState(false);
   const [region, setRegion] = useState(null);
   const [sightings, setSightings] = useState([]);
@@ -60,6 +65,29 @@ export default function MapScreen() {
   useEffect(() => {
     if (permission?.granted) centerOnUser();
   }, [permission?.granted, centerOnUser]);
+
+  // Mientras el mapa está abierto, la celda del usuario sigue sus movimientos (sin mover la cámara del mapa).
+  useEffect(() => {
+    if (!permission?.granted) return undefined;
+    let subscription = null;
+    let cancelled = false;
+    Location.watchPositionAsync(
+      { accuracy: Location.Accuracy.High, distanceInterval: WATCH_DISTANCE_METERS },
+      ({ coords }) => {
+        setUserCell(cellOf(coords.latitude, coords.longitude));
+        setFix((prev) => ({ accuracy: Math.round(coords.accuracy ?? 0), count: (prev?.count ?? 0) + 1 }));
+      },
+    )
+      .then((sub) => {
+        if (cancelled) sub.remove();
+        else subscription = sub;
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      subscription?.remove();
+    };
+  }, [permission?.granted]);
 
   async function enableLocation() {
     if (permission && !permission.canAskAgain) return Linking.openSettings();
@@ -188,6 +216,7 @@ export default function MapScreen() {
             <View style={local.devPanel}>
               <Text style={local.devText}>{`DEV · H3 resolución ${H3_RESOLUTION}`}</Text>
               <Text style={local.devText}>{`Tu celda: ${userCell ?? 'tocá el botón de GPS'}`}</Text>
+              <Text style={local.devText}>{fix ? `GPS: lectura #${fix.count} · ±${fix.accuracy} m` : 'GPS: sin lecturas todavía'}</Text>
               <Text style={local.devText}>
                 {hexes
                   ? `En vista: ${hexes.length} celdas · ${hexes.filter((hex) => hex.sightings > 0).length} con avistamientos (${sightings.length} en total)`

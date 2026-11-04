@@ -513,3 +513,61 @@ Lo que se hizo:
 - Componente Panel (contorno de tinta, borde suave y sombra) y prop onNavigate en navigation/index.js para cambiar de tab.
 - Verificada solo la sintaxis; sin pruebas en el teléfono ni contra el backend.
 ```
+
+## 2026-11-04 — Resolución H3 y celda del usuario en el mapa
+
+```text
+Resumen de los mensajes y decisiones (app/src/screens/MapScreen.js y los h3.js de app y core-api como referencia):
+
+Pedido: el overlay H3 del mapa no dibujaba hexágonos, el backend respondía "La celda H3 no es válida" y la celda del usuario no cambiaba al moverse. Para probar los avistamientos cercanos hace falta una celda más chica que una cuadra.
+
+Decisiones dadas:
+- Resolución H3 11 (~28 m de lado) en la app y en el Core. Tienen que ser la misma: assertValidCell rechaza otra resolución con 400 INVALID_H3_CELL.
+- No se tocó la tarea en segundo plano: lo pedido fue que el panel del mapa marque en qué hexágono está el usuario.
+
+Lo que se hizo:
+- app/src/utils/h3.js y core-api/src/utils/h3.js: H3_RESOLUTION pasó de 8 a 15 y quedó en 11.
+- app/src/utils/h3Overlay.js: el margen alrededor de la región visible se calcula con la resolución (dos lados de celda) en vez de 0,006° fijos, y MAX_CELLS subió de 250 a 400. Con resolución 15 el overlay devolvía null y no dibujaba nada.
+- app/src/screens/MapScreen.js: USER_DELTA bajó de 0,01 a 0,003 porque con celdas de ~28 m el overlay solo dibuja con el mapa cerca. Se agregó watchPositionAsync (precisión alta, cada 5 m) para que userCell, el id del panel y el hexágono azul sigan al usuario; antes se calculaban una sola vez al abrir o al pulsar el GPS. El panel de desarrollo muestra además "GPS: lectura #N · ±X m".
+- app/src/tasks/locationTask.js (cambio hecho a mano, para pruebas): la tarea en segundo plano ahora lee la ubicación cada 50 m con al menos 5 s entre lecturas (DISTANCE_INTERVAL_METERS 150 -> 50, MIN_TIME_INTERVAL_MS 30 s -> 5 s), para que dispare con las celdas de ~28 m. El resto del diff es solo formato (comillas dobles). Hay que volver a 150 m y 30 s antes de dejarlo fijo: gasta más batería y más pedidos.
+- Tests: app/test/h3Overlay.test.js usa una región de 0,003; core-api/test/location.service.test.js toma la resolución de utils/h3 en vez de tener el 8 fijo.
+- Verificado con los tests de la app (24) y del Core (18). Sin pruebas en el teléfono. Los datos guardados con otra resolución (avistamientos, capturas, ubicaciones) quedan con un h3Index que ya no coincide y hay que borrarlos o volver a crearlos.
+```
+
+## 2026-11-04 — Homo sapiens en el catálogo y foto congelada al capturar
+
+```text
+Resumen de los mensajes y decisiones (captura de pantalla de "No reconocimos la especie" y log de la respuesta de la IA como referencia):
+
+Pedido: agregar al catálogo de especies al Homo sapiens sapiens. Después, al probar la captura: la app respondía "No reconocimos la especie", la foto tardaba mucho en sacarse y la cámara seguía mostrando imagen en vivo con el círculo de carga, sin saber si la foto se había sacado. Se pidió que al tocar el botón de la cámara la imagen se congele o aparezca la foto tomada.
+
+Decisiones dadas:
+- Nombre científico: el pedido inicial fue "Homo sapiens sapiens". La IA responde "Homo sapiens" (isAnimal true, animalProbability 0.99) y el Core compara el nombre normalizado exacto, así que el catálogo pasó a "Homo sapiens" (no se tocó el prompt de la IA).
+- La foto congelada se muestra durante el envío y se quita al terminar o fallar.
+
+Lo que se hizo:
+- mongo-init/seed/species.json: nueva entrada "ser humano" (Mammalia, Hominidae, categoría comun, Preocupación menor), entre Holochilus vulpinus y Hydrochoerus hydrochaeris. El conteo pasó de 670 a 671 (README.md y comentario de import-species.js). Para que quede en la base hay que volver a ejecutar import-species.js con mongosh y borrar a mano el registro "Homo sapiens sapiens" si ya se había importado.
+- app/src/screens/CameraScreen.js: la ubicación y la foto se piden en paralelo (Promise.all); antes se esperaba el GPS antes de sacar la foto. Nuevo estado frozenUri: la foto recién sacada se dibuja encima de la CameraView mientras se identifica.
+- app/src/hooks/useCamera.js: takePhoto(onTaken) avisa con la uri apenas la cámara captura, antes de comprimir a JPEG.
+- Verificado con los tests de la app (24, que no cubren la cámara). Sin pruebas en el teléfono. La compresión y la llamada a la IA (hasta 12 s) siguen igual.
+```
+
+## 2026-11-04 — Sesión de una cuenta que ya no existe
+
+```text
+Resumen de los mensajes y decisiones (app/src/services/session.js y app/src/store/authStore.js como referencia):
+
+Pedido: después de borrar el volumen de Docker y reiniciar Expo con npm start -c, la app arrancaba en el mapa y, al ir a la sesión, mostraba "Usuario no encontrado". Debería levantar en el inicio de sesión o registro. Pregunta: ¿es Expo, Docker o algo interno?
+
+Diagnóstico: es interno de la app. Los tokens viven en SecureStore (Keystore de Android, dentro de Expo Go), y ni expo start -c (solo limpia la caché de Metro) ni borrar el volumen los tocan. El access token sigue firmado y vigente, pero el usuario ya no está en Mongo: el servidor responde 404 USER_NOT_FOUND, no 401, y authRequest solo cerraba la sesión ante un 401.
+
+Decisiones dadas:
+- Un 404 USER_NOT_FOUND se trata como sesión terminada (borra los tokens y lanza SESSION_ENDED), igual que un refresh token rechazado.
+- Además, verificar la sesión guardada apenas se abre la app, con un pedido autenticado liviano, para que vuelva al login de inmediato y no recién con el primer pedido. Se reutiliza getMe (GET /users/me) en vez de crear otro.
+- Si la verificación falla por red o timeout, se mantiene la sesión guardada (la app tiene que seguir abriendo sin conexión).
+
+Lo que se hizo:
+- app/src/services/session.js: endSessionIfUserGone en authRequest (primer pedido y reintento tras renovar) y el mismo chequeo en refreshSession.
+- app/src/store/authStore.js: verifyStoredSession corre al cargar una sesión guardada; llama a getMe y, si responde, actualiza el usuario de la sesión (updateSessionUser), lo que también refresca settings.nearbyAlerts.
+- Verificado con los tests de la app (24, que no cubren este flujo). Sin pruebas en el teléfono.
+```

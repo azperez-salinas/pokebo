@@ -80,7 +80,8 @@ const locationService = require('../src/services/location.service');
 const sightingsService = require('../src/services/sightings.service');
 
 // Celdas de prueba: el centro, una vecina directa y una a dos anillos
-const CENTER = h3.latLngToCell(-34.9011, -56.1645, 8);
+const { H3_RESOLUTION } = require('../src/utils/h3');
+const CENTER = h3.latLngToCell(-34.9011, -56.1645, H3_RESOLUTION);
 const NEIGHBOR = h3.gridDisk(CENTER, 1).find((cell) => cell !== CENTER);
 const RING2 = h3.gridDisk(CENTER, 2).find((cell) => !h3.gridDisk(CENTER, 1).includes(cell));
 
@@ -113,7 +114,7 @@ function reset({ nearbyAlerts = true } = {}) {
 
 test('rechaza celdas inválidas o de otra resolución con 400 INVALID_H3_CELL', async () => {
   reset();
-  const otraResolucion = h3.latLngToCell(-34.9011, -56.1645, 9);
+  const otraResolucion = h3.latLngToCell(-34.9011, -56.1645, H3_RESOLUTION + 1);
   for (const invalida of ['basura', '', '8828308281fffff0', otraResolucion, null]) {
     await assert.rejects(
       () => locationService.reportLocation('yo', invalida),

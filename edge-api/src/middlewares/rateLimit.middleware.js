@@ -1,12 +1,13 @@
 const buckets = new Map();
 
-function createRateLimit({ limit, windowMs }) {
+function createRateLimit({ name, limit, windowMs }) {
   return function rateLimitForWindow(req, res, next) {
     const now = Date.now();
     const key = req.ip || req.socket.remoteAddress || 'unknown';
-    const current = buckets.get(`${windowMs}:${key}`);
+    const bucketKey = `${name}:${key}`;
+    const current = buckets.get(bucketKey);
     if (!current || current.resetAt <= now) {
-      buckets.set(`${windowMs}:${key}`, { count: 1, resetAt: now + windowMs });
+      buckets.set(bucketKey, { count: 1, resetAt: now + windowMs });
       return next();
     }
     current.count += 1;
@@ -19,7 +20,8 @@ function createRateLimit({ limit, windowMs }) {
   };
 }
 
-const rateLimit = createRateLimit({ limit: 120, windowMs: 60 * 1000 });
-rateLimit.registration = createRateLimit({ limit: 15, windowMs: 15 * 60 * 1000 });
+const rateLimit = createRateLimit({ name: 'global', limit: 120, windowMs: 60 * 1000 });
+rateLimit.registration = createRateLimit({ name: 'registration', limit: 15, windowMs: 15 * 60 * 1000 });
+rateLimit.login = createRateLimit({ name: 'login', limit: 20, windowMs: 15 * 60 * 1000 });
 
 module.exports = rateLimit;

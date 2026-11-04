@@ -4,7 +4,7 @@ const config = require('../config');
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-async function registrationWithEmail(req, res, next) {
+async function forwardWithEmailDelivery(req, res, next) {
   const startedAt = Date.now();
   try {
     const { status, data } = await reenviarACore(req.originalUrl, req.method, req.body, req.headers);
@@ -14,7 +14,7 @@ async function registrationWithEmail(req, res, next) {
 
     if (data.delivery) {
       try {
-        await mailService.sendRegistrationCode(data.delivery);
+        await mailService.sendCodeEmail(data.delivery);
       } catch (error) {
         // La respuesta publica no cambia segun exista el correo ni segun el resultado del proveedor.
         // El desafio sigue vigente y el usuario puede solicitar un reenvio.
@@ -29,4 +29,4 @@ async function registrationWithEmail(req, res, next) {
   }
 }
 
-module.exports = { registrationWithEmail };
+module.exports = { forwardWithEmailDelivery };

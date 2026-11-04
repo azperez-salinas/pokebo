@@ -1,5 +1,6 @@
 const authService = require('../services/auth.service');
 const registrationService = require('../services/registration.service');
+const loginVerificationService = require('../services/login-verification.service');
 
 // Los AppError del service (ej. 409 USERNAME_TAKEN) los traduce error.middleware
 async function startRegistration(req, res, next) {
@@ -31,8 +32,26 @@ async function resendRegistration(req, res, next) {
 
 async function login(req, res, next) {
   try {
-    const result = await authService.login(req.body);
+    const result = await loginVerificationService.start(req.body);
+    res.status(202).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function verifyLogin(req, res, next) {
+  try {
+    const result = await loginVerificationService.verify(req.body.challengeId, req.body.code);
     res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function resendLogin(req, res, next) {
+  try {
+    const result = await loginVerificationService.resend(req.body.challengeId);
+    res.status(202).json(result);
   } catch (err) {
     next(err);
   }
@@ -89,6 +108,8 @@ module.exports = {
   verifyRegistration,
   resendRegistration,
   login,
+  verifyLogin,
+  resendLogin,
   changePassword,
   refresh,
   forgotPassword,

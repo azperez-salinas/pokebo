@@ -7,7 +7,11 @@ const controller = require('../../controllers/auth.controller');
 // serviceAuth (firma HMAC del Edge) ya está montado global en app.js para todo /api/v1
 const router = Router();
 
-router.post('/register', validate(schemas.register), controller.register);
+// /register queda como alias seguro para clientes en transicion: ya no crea usuarios ni emite tokens.
+router.post('/register', validate(schemas.register), controller.startRegistration);
+router.post('/registrations', validate(schemas.register), controller.startRegistration);
+router.post('/registrations/verify', validate(schemas.verifyRegistration), controller.verifyRegistration);
+router.post('/registrations/resend', validate(schemas.resendRegistration), controller.resendRegistration);
 router.post('/login', validate(schemas.login), controller.login);
 router.put('/password', auth, validate(schemas.changePassword), controller.changePassword);
 router.post('/refresh', validate(schemas.refresh), controller.refresh);

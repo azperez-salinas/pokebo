@@ -17,39 +17,6 @@ const {
 
 const BCRYPT_ROUNDS = 10;
 
-const usernameTaken = () => new AppError(409, 'USERNAME_TAKEN', 'El nombre de usuario ya está en uso');
-const emailTaken = () => new AppError(409, 'EMAIL_TAKEN', 'El email ya está en uso');
-
-
-async function register(data) {
-  const { password, ...fields } = data;
-
-  if (await User.exists({ username: fields.username })) {
-    throw usernameTaken();
-  }
-  if (await User.exists({ email: fields.email.toLowerCase() })) {
-    throw emailTaken();
-  }
-
-  const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-
-  let user;
-  try {
-    user = await User.create({ ...fields, passwordHash });
-  } catch (err) {
-    // Dos registros simultáneos con el mismo username o email: lo frena el índice unique
-    if (err.code === 11000) {
-      const campo = Object.keys(err.keyPattern || err.keyValue || {})[0];
-      if (campo === 'username') throw usernameTaken();
-      if (campo === 'email') throw emailTaken();
-    }
-    throw err;
-  }
-
-  const tokens = await issueTokens(user);
-  return { user: toPublicUser(user), ...tokens };
-}
-
 // Hash de relleno: si el username no existe igual se corre bcrypt, para no revelar por tiempo de respuesta
 const DUMMY_HASH = bcrypt.hashSync('pokebo-dummy-password', BCRYPT_ROUNDS);
 
@@ -191,4 +158,4 @@ async function resetPassword(usernameOrEmail, code, newPassword) {
   return { message: 'Contraseña actualizada' };
 }
 
-module.exports = { register, login, changePassword, refresh, forgotPassword, resetPassword, logout };
+module.exports = { login, changePassword, refresh, forgotPassword, resetPassword, logout };

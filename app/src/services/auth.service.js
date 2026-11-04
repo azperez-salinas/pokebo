@@ -1,7 +1,15 @@
 import { request } from './api';
 
 export async function register(data) {
-  return request('/auth/register', { method: 'POST', body: data });
+  return request('/auth/registrations', { method: 'POST', body: data });
+}
+
+export async function verifyRegistration(challengeId, code) {
+  return request('/auth/registrations/verify', { method: 'POST', body: { challengeId, code } });
+}
+
+export async function resendRegistration(challengeId) {
+  return request('/auth/registrations/resend', { method: 'POST', body: { challengeId } });
 }
 
 export async function login(credentials) {

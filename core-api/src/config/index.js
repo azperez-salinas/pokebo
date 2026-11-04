@@ -26,6 +26,12 @@ const config = {
   accessTokenTtl: 15 * 60, // segundos
   refreshTokenTtl: 30 * 24 * 60 * 60, // segundos
   passwordResetTtl: 15 * 60, // segundos
+  registrationCodeTtl: parseInt(process.env.REGISTRATION_CODE_TTL, 10) || 5 * 60,
+  registrationResendCooldown: parseInt(process.env.REGISTRATION_RESEND_COOLDOWN, 10) || 60,
+  registrationMaxAttempts: parseInt(process.env.REGISTRATION_MAX_ATTEMPTS, 10) || 5,
+  registrationMaxResends: parseInt(process.env.REGISTRATION_MAX_RESENDS, 10) || 3,
+  // SERVICE_SHARED_SECRET mantiene compatibles los entornos existentes; produccion debe definir un pepper separado.
+  registrationCodePepper: process.env.REGISTRATION_CODE_PEPPER || process.env.SERVICE_SHARED_SECRET,
   mailProvider: process.env.MAIL_PROVIDER || 'console',
   serviceSharedSecret: process.env.SERVICE_SHARED_SECRET,
   mongoUri: process.env.MONGO_URI,

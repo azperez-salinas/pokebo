@@ -3,6 +3,9 @@
     "name": "pokebo",
     "slug": "pokebo",
     "version": "0.1.0",
+    "android": {
+      "package": "com.pokebo.app"
+    },
     "plugins": [
       "expo-secure-store",
       [
@@ -17,10 +20,13 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Pokebo usa tu ubicación al sacar una foto para registrar dónde viste al animal.",
-          "isAndroidBackgroundLocationEnabled": false,
+          "locationAlwaysAndWhenInUsePermission": "Pokebo usa tu ubicación en segundo plano para avisarte cuando hay avistamientos cerca.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
           "isIosBackgroundLocationEnabled": false
         }
       ],
+      "expo-notifications",
       "expo-font"
     ]
   }

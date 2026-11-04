@@ -4,12 +4,12 @@ const assert = require('node:assert/strict');
 // La app usa módulos ES (los empaqueta Metro): desde node se cargan con import dinámico.
 const loadOverlay = () => import('../src/utils/h3Overlay.js');
 
-const MONTEVIDEO = { latitude: -34.9011, longitude: -56.1645, latitudeDelta: 0.01, longitudeDelta: 0.01 };
+const MONTEVIDEO = { latitude: -34.9011, longitude: -56.1645, latitudeDelta: 0.003, longitudeDelta: 0.003 };
 
 test('cellsForRegion cubre toda la región visible, incluidas las esquinas', async () => {
   const { cellsForRegion, cellOf } = await loadOverlay();
   const cells = cellsForRegion(MONTEVIDEO);
-  assert.ok(cells.length >= 2 && cells.length <= 30, `celdas: ${cells.length}`);
+  assert.ok(cells.length >= 2 && cells.length <= 200, `celdas: ${cells.length}`);
 
   const { latitude, longitude, latitudeDelta, longitudeDelta } = MONTEVIDEO;
   for (const dLat of [-0.5, 0, 0.5]) {
@@ -26,10 +26,10 @@ test('cellsForRegion devuelve null si el mapa está demasiado lejos o no hay reg
   assert.equal(cellsForRegion(null), null);
 });
 
-test('el zoom inicial de la app (0.08) todavía dibuja un número razonable de celdas', async () => {
+test('el zoom al centrar en el usuario (0.003) dibuja un número razonable de celdas', async () => {
   const { cellsForRegion } = await loadOverlay();
-  const cells = cellsForRegion({ ...MONTEVIDEO, latitudeDelta: 0.08, longitudeDelta: 0.08 });
-  assert.ok(cells && cells.length < 250, `celdas: ${cells?.length}`);
+  const cells = cellsForRegion({ ...MONTEVIDEO, latitudeDelta: 0.003, longitudeDelta: 0.003 });
+  assert.ok(cells && cells.length < 400, `celdas: ${cells?.length}`);
 });
 
 test('buildOverlay marca la celda del usuario, sus vecinas y cuenta avistamientos por celda', async () => {

@@ -1,16 +1,16 @@
 // Lógica pura (sin React) del overlay de hexágonos H3 para desarrollo en el mapa.
-import { cellToBoundary, gridDisk, polygonToCells } from 'h3-js';
+import { cellToBoundary, getHexagonEdgeLengthAvg, gridDisk, polygonToCells } from 'h3-js';
 import { H3_RESOLUTION, cellOf } from './h3.js';
 
 export { H3_RESOLUTION, cellOf };
 
 // Más lejos que esto se dibujarían demasiadas celdas: el overlay pide acercar el mapa.
 export const MAX_LATITUDE_DELTA = 0.08;
-const MAX_CELLS = 250;
+const MAX_CELLS = 400;
 
-// polygonToCells solo toma las celdas cuyo centro cae adentro del rectángulo. Se agranda unos 600 m para
-// que no falten las celdas que se ven a medias en el borde de la pantalla.
-const EDGE_PADDING_DEGREES = 0.006;
+// polygonToCells solo toma las celdas cuyo centro cae adentro del rectángulo. Se agranda dos lados de celda
+// para que no falten las celdas que se ven a medias en el borde de la pantalla (1° ≈ 111 km).
+const EDGE_PADDING_DEGREES = (getHexagonEdgeLengthAvg(H3_RESOLUTION, 'm') * 2) / 111000;
 
 // Celdas que cubren la región visible del mapa ({ latitude, longitude, latitudeDelta, longitudeDelta }).
 // Devuelve null si el mapa está demasiado lejos.

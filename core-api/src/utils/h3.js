@@ -1,9 +1,9 @@
 // Utilidades H3 compartidas por los servicios del Core (sin Redis ni Mongo).
-const h3 = require('h3-js');
-const { AppError } = require('./errors');
+const h3 = require("h3-js");
+const { AppError } = require("./errors");
 
-// Resolución de las celdas H3 (~460 m de lado). Se usa para el h3Index de capturas, avistamientos y usuarios.
-const H3_RESOLUTION = 8;
+// Resolución de las celdas H3 (~28 m de lado, menos de una cuadra). Se usa para el h3Index de capturas, avistamientos y usuarios.
+const H3_RESOLUTION = 11;
 
 // Id de la celda H3 donde cae el punto
 function latLngToCell(lat, lng) {
@@ -14,11 +14,15 @@ function latLngToCell(lat, lng) {
 function assertValidCell(h3Index) {
   let valid = false;
   try {
-    valid = typeof h3Index === 'string' && h3.isValidCell(h3Index) && h3.getResolution(h3Index) === H3_RESOLUTION;
+    valid =
+      typeof h3Index === "string" &&
+      h3.isValidCell(h3Index) &&
+      h3.getResolution(h3Index) === H3_RESOLUTION;
   } catch {
     valid = false;
   }
-  if (!valid) throw new AppError(400, 'INVALID_H3_CELL', 'La celda H3 no es válida');
+  if (!valid)
+    throw new AppError(400, "INVALID_H3_CELL", "La celda H3 no es válida");
   return h3Index;
 }
 
@@ -36,4 +40,10 @@ function ringDistance(a, b) {
   }
 }
 
-module.exports = { H3_RESOLUTION, latLngToCell, assertValidCell, cellsAround, ringDistance };
+module.exports = {
+  H3_RESOLUTION,
+  latLngToCell,
+  assertValidCell,
+  cellsAround,
+  ringDistance,
+};

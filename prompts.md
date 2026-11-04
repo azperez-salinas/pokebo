@@ -513,3 +513,23 @@ Lo que se hizo:
 - Componente Panel (contorno de tinta, borde suave y sombra) y prop onNavigate en navigation/index.js para cambiar de tab.
 - Verificada solo la sintaxis; sin pruebas en el teléfono ni contra el backend.
 ```
+
+## 2026-11-04 — Resolución H3 y celda del usuario en el mapa
+
+```text
+Resumen de los mensajes y decisiones (app/src/screens/MapScreen.js y los h3.js de app y core-api como referencia):
+
+Pedido: el overlay H3 del mapa no dibujaba hexágonos, el backend respondía "La celda H3 no es válida" y la celda del usuario no cambiaba al moverse. Para probar los avistamientos cercanos hace falta una celda más chica que una cuadra.
+
+Decisiones dadas:
+- Resolución H3 11 (~28 m de lado) en la app y en el Core. Tienen que ser la misma: assertValidCell rechaza otra resolución con 400 INVALID_H3_CELL.
+- No se tocó la tarea en segundo plano: lo pedido fue que el panel del mapa marque en qué hexágono está el usuario.
+
+Lo que se hizo:
+- app/src/utils/h3.js y core-api/src/utils/h3.js: H3_RESOLUTION pasó de 8 a 15 y quedó en 11.
+- app/src/utils/h3Overlay.js: el margen alrededor de la región visible se calcula con la resolución (dos lados de celda) en vez de 0,006° fijos, y MAX_CELLS subió de 250 a 400. Con resolución 15 el overlay devolvía null y no dibujaba nada.
+- app/src/screens/MapScreen.js: USER_DELTA bajó de 0,01 a 0,003 porque con celdas de ~28 m el overlay solo dibuja con el mapa cerca. Se agregó watchPositionAsync (precisión alta, cada 5 m) para que userCell, el id del panel y el hexágono azul sigan al usuario; antes se calculaban una sola vez al abrir o al pulsar el GPS. El panel de desarrollo muestra además "GPS: lectura #N · ±X m".
+- app/src/tasks/locationTask.js (cambio hecho a mano, para pruebas): la tarea en segundo plano ahora lee la ubicación cada 50 m con al menos 5 s entre lecturas (DISTANCE_INTERVAL_METERS 150 -> 50, MIN_TIME_INTERVAL_MS 30 s -> 5 s), para que dispare con las celdas de ~28 m. El resto del diff es solo formato (comillas dobles). Hay que volver a 150 m y 30 s antes de dejarlo fijo: gasta más batería y más pedidos.
+- Tests: app/test/h3Overlay.test.js usa una región de 0,003; core-api/test/location.service.test.js toma la resolución de utils/h3 en vez de tener el 8 fijo.
+- Verificado con los tests de la app (24) y del Core (18). Sin pruebas en el teléfono. Los datos guardados con otra resolución (avistamientos, capturas, ubicaciones) quedan con un h3Index que ya no coincide y hay que borrarlos o volver a crearlos.
+```

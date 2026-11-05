@@ -42,6 +42,7 @@ function ConfidenceBar({ confidence }) {
 // onBack: OTRA FOTO (o REINTENTAR) vuelve a la cámara. onNext: SIGUIENTE abre la colección.
 export default function CaptureResultScreen({ result, error, onBack, onNext }) {
   const capture = result?.data?.capture;
+  const unlocked = result?.data?.unlockedAchievements ?? [];
   const info = error ? ERRORS[error.code] || GENERIC : null;
 
   if (!capture) {
@@ -79,6 +80,15 @@ export default function CaptureResultScreen({ result, error, onBack, onNext }) {
         {typeof capture.confidence === 'number' ? <ConfidenceBar confidence={capture.confidence} /> : null}
       </Panel>
 
+      {unlocked.length > 0 ? (
+        <Panel style={local.achievementPanel}>
+          <Text style={local.achievementTitle}>{unlocked.length === 1 ? '¡LOGRO DESBLOQUEADO!' : '¡LOGROS DESBLOQUEADOS!'}</Text>
+          {unlocked.map((achievement) => (
+            <Text key={achievement.code} style={local.achievementName}>★ {achievement.name}</Text>
+          ))}
+        </Panel>
+      ) : null}
+
       <View style={local.actions}>
         <AuthButton label="SIGUIENTE" onPress={onNext} />
         <View style={local.gap} />
@@ -106,6 +116,9 @@ const local = StyleSheet.create({
   segment: { flex: 1, marginHorizontal: 1, backgroundColor: palette.linea },
   segmentFilled: { backgroundColor: palette.verde },
   percent: { fontFamily: fonts.body, fontSize: 22, color: palette.tinta, width: 52, textAlign: 'right' },
+  achievementPanel: { marginTop: 14, paddingVertical: 10, backgroundColor: palette.amarillo },
+  achievementTitle: { fontFamily: fonts.display, fontSize: 10, color: palette.tinta, marginBottom: 6 },
+  achievementName: { fontFamily: fonts.body, fontSize: 22, color: palette.tinta },
   error: { color: palette.rosa, fontFamily: fonts.body },
   actions: { width: '100%', marginTop: 'auto' },
   gap: { height: 12 },

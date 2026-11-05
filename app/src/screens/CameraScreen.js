@@ -4,6 +4,8 @@ import { CameraView } from 'expo-camera';
 import AuthButton from '../components/AuthButton';
 import Panel from '../components/Panel';
 import CaptureResultScreen from './CaptureResultScreen';
+import { notifyUnlockedAchievements } from '../services/achievementAlerts';
+import { notifyInboxChanged } from '../store/notificationsStore';
 import useCamera from '../hooks/useCamera';
 import useLocation from '../hooks/useLocation';
 import { createCapture } from '../services/captures.service';
@@ -53,6 +55,9 @@ export default function CameraScreen({ onNavigate }) {
       const [photo, position] = await Promise.all([takePhoto(setFrozenUri), getCurrentPosition()]);
       const result = await createCapture({ uri: photo.uri, ...position });
       setOutcome({ result });
+      // La captura puede haber creado avisos en el buzón y desbloqueado logros
+      notifyInboxChanged();
+      notifyUnlockedAchievements(result?.data?.unlockedAchievements);
     } catch (error) {
       setOutcome({ error });
     } finally {

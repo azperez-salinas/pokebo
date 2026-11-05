@@ -2,6 +2,7 @@
 const { redisClient } = require('../config/redis');
 const User = require('../models/User.model');
 const sightingsService = require('./sightings.service');
+const notificationsService = require('./notifications.service');
 const { AppError } = require('../utils/errors');
 const { latLngToCell: h3LatLngToCell, assertValidCell, cellsAround, ringDistance } = require('../utils/h3');
 
@@ -21,6 +22,21 @@ async function updateLocation(userId, h3Index) {
 // Borra todo lo que el servidor sabe de la ubicación del usuario
 async function deleteLocation(userId) {
   await redisClient.del([cellKey(userId), seenKey(userId)]);
+}
+
+// Mismo texto que la notificación del teléfono (app/src/utils/nearbyNotification.js)
+function nearbyNotificationText(nearby) {
+  const nameOf = (item) => item.species?.commonName || 'un animal';
+  if (nearby.length === 1) {
+    return {
+      title: `${nameOf(nearby[0])} cerca de vos`,
+      body: nearby[0].zone === 'own' ? 'Lo vieron hace poco en tu zona.' : 'Lo vieron hace poco en una zona vecina.',
+    };
+  }
+  const names = [...new Set(nearby.map(nameOf))];
+  const rest = names.length - 3;
+  const shown = names.slice(0, 3).join(', ');
+  return { title: `${nearby.length} avistamientos cerca de vos`, body: rest > 0 ? `${shown} y ${rest} más.` : `${shown}.` };
 }
 
 // El usuario avisa en qué celda está. Se guarda y, si tiene los avisos activados, se devuelven los
@@ -50,7 +66,14 @@ async function reportLocation(userId, h3Index) {
       zone: distance === 0 ? 'own' : 'near',
     });
   }
-  if (nearby.length > 0) await redisClient.expire(seenKey(userId), SEEN_TTL_SECONDS);
+  if (nearby.length > 0) {
+    await redisClient.expire(seenKey(userId), SEEN_TTL_SECONDS);
+    await notificationsService.createSafe(userId, {
+      type: 'nearby',
+      ...nearbyNotificationText(nearby),
+      data: { h3Index, sightingIds: nearby.map((item) => item.id) },
+    });
+  }
 
   return { nearby };
 }

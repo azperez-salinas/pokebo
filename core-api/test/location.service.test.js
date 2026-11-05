@@ -75,6 +75,10 @@ const inject = (path, exports) => {
 inject('../src/config/redis', { redisClient: fakeRedis });
 inject('../src/models/User.model', User);
 inject('../src/models/Sighting.model', Sighting);
+const createdNotifications = [];
+inject('../src/models/Notification.model', {
+  create: async (doc) => { createdNotifications.push(doc); return { _id: `n${createdNotifications.length}`, ...doc }; },
+});
 
 const locationService = require('../src/services/location.service');
 const sightingsService = require('../src/services/sightings.service');

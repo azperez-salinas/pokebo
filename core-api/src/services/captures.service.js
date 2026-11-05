@@ -5,6 +5,8 @@ const Species = require("../models/Species.model");
 const gridfsService = require("./gridfs.service");
 const sightingsService = require("./sightings.service");
 const locationService = require("./location.service");
+const achievementsService = require("./achievements.service");
+const notificationsService = require("./notifications.service");
 const normalizeScientificName = require("../utils/normalizeScientificName");
 const { AppError } = require("../utils/errors");
 
@@ -87,10 +89,21 @@ async function create(userId, { imageBase64, contentType, lat, lng, ai }) {
     throw err;
   }
 
-  // TODO: logros desbloqueados (achievements.service) y push a usuarios cercanos
+  // El buzón guarda las capturas de especies nuevas (las repetidas no aportan un aviso)
+  if (isNewSpecies) {
+    await notificationsService.createSafe(userId, {
+      type: "capture",
+      title: "¡Nueva especie!",
+      body: species.commonName,
+      data: { captureId: capture._id, speciesId: species._id },
+    });
+  }
+
+  const unlockedAchievements = await achievementsService.evaluate(userId, capture);
+
   return {
     capture: toCreatedCapture(capture, species),
-    unlockedAchievements: [],
+    unlockedAchievements,
   };
 }
 

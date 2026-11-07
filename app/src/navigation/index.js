@@ -14,7 +14,7 @@ import styles from '../styles';
 
 const tabs = [
   { id: 'map', label: 'Mapa', Screen: MapScreen },
-  { id: 'collection', label: 'Colección', Screen: EncyclopediaScreen },
+  { id: 'collection', label: 'Enciclopedia', Screen: EncyclopediaScreen },
   { id: 'camera', label: 'Cámara', Screen: CameraScreen },
   { id: 'achievements', label: 'Logros', Screen: AchievementsScreen },
   { id: 'settings', label: 'Ajustes', Screen: SettingsScreen },

@@ -82,7 +82,11 @@ async function create(userId, { imageBase64, contentType, lat, lng, ai }) {
       h3Index: await locationService.latLngToCell(lat, lng),
       isNewSpecies,
     });
-    await sightingsService.createFromCapture(capture);
+    const sighting = await sightingsService.createFromCapture(capture);
+    // Una falla del aviso no invalida la captura ni el avistamiento ya guardados.
+    await locationService.notifyUsersAboutSighting(sighting, species).catch((cause) => {
+      console.warn('[captures] no se pudieron generar avisos cercanos:', cause.message);
+    });
   } catch (err) {
     if (capture) await Capture.deleteOne({ _id: capture._id });
     await gridfsService.deleteImage(photoId);

@@ -548,7 +548,7 @@ const local = StyleSheet.create({
 
   refreshButton: {
     position: 'absolute',
-    top: 16,
+    top: 72,
     right: 16,
     width: 48,
     height: 48,
@@ -575,7 +575,7 @@ const local = StyleSheet.create({
 
   mapErrorBox: {
     position: 'absolute',
-    top: 72,
+    top: 128,
     left: 16,
     right: 16,
     backgroundColor: palette.blanco,

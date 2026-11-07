@@ -107,7 +107,7 @@ export default function CameraScreen({ onNavigate }) {
       <View style={local.hint} pointerEvents="none">
         <Panel>
           <Text style={local.hintTitle}>APUNTÁ AL ANIMAL</Text>
-          <Text style={local.hintText}>Foto real, no de pantalla: la IA lo revisa.</Text>
+          <Text style={local.hintText}>Centra al animal lo mejor que puedas y capturalo.</Text>
         </Panel>
       </View>
 
@@ -117,7 +117,7 @@ export default function CameraScreen({ onNavigate }) {
         <View style={[local.corner, local.bottomLeft]} />
         <View style={[local.corner, local.bottomRight]} />
       </View>
-      <Text style={local.frameText} pointerEvents="none">Mantené al animal dentro del marco</Text>
+
 
       {sending ? (
         <View style={local.loader} pointerEvents="none">
@@ -126,9 +126,7 @@ export default function CameraScreen({ onNavigate }) {
       ) : null}
 
       <View style={local.controls}>
-        <ControlButton background={buttons.circle.rosa} icon={icons.arrows.arrowLeft} size={60} label="Ir al mapa" onPress={() => onNavigate('map')} />
         <ControlButton background={buttons.circle.amarillo} icon={icons.pokeballs.pokebolaSinSombra} size={84} label="Sacar foto" disabled={sending || !ready} onPress={capture} />
-        <ControlButton background={buttons.square.azul} icon={icons.panel.paw} size={60} label="Ir a la colección" onPress={() => onNavigate('collection')} />
       </View>
     </View>
   );
@@ -149,6 +147,6 @@ const local = StyleSheet.create({
   bottomRight: { bottom: 0, right: 0, borderBottomWidth: 6, borderRightWidth: 6 },
   frameText: { position: 'absolute', bottom: '22%', left: 0, right: 0, textAlign: 'center', fontFamily: fonts.body, fontSize: 24, color: palette.blanco, textShadowColor: palette.tinta, textShadowRadius: 4 },
   loader: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
-  controls: { position: 'absolute', bottom: 24, left: 24, right: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  controls: { position: 'absolute', bottom: 24, left: 24, right: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   actions: { width: '100%', marginTop: 32 },
 });

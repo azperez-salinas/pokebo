@@ -18,7 +18,7 @@ const pushToken = Joi.object({
   platform: Joi.string().valid('ios', 'android').required(),
 });
 
-// El cliente en segundo plano solo informa la celda H3 (resolución 8) donde está, nunca sus coordenadas.
+// El cliente informa solo la celda H3 (resolución 11), nunca sus coordenadas exactas.
 const location = Joi.object({
   h3Index: Joi.string().pattern(/^[0-9a-f]{15}$/).required(),
 });

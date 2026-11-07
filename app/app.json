@@ -19,10 +19,9 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Pokebo usa tu ubicación al sacar una foto para registrar dónde viste al animal.",
-          "locationAlwaysAndWhenInUsePermission": "Pokebo usa tu ubicación en segundo plano para avisarte cuando hay avistamientos cerca.",
-          "isAndroidBackgroundLocationEnabled": true,
-          "isAndroidForegroundServiceEnabled": true,
+          "locationWhenInUsePermission": "Pokebo usa tu ubicación para registrar capturas y avisarte sobre avistamientos cercanos mientras usás la app.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false,
           "isIosBackgroundLocationEnabled": false
         }
       ],

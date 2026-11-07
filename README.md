@@ -158,9 +158,11 @@ Si la app muestra `No se pudo conectar al servidor. Revisá la URL del Edge API 
 
 ## Cargar especies en MongoDB
 
-El catálogo inicial de 671 especies se encuentra en `mongo-init/seed/species.json`.
+El catálogo de especies se encuentra en `mongo-init/seed/species.json`.
 
-Con MongoDB levantado, ejecutar desde la raíz del proyecto:
+Al ejecutar `docker compose up`, el servicio temporal `mongo-seed` espera a que MongoDB esté disponible, sincroniza automáticamente el catálogo mediante `upsert` y finaliza. `core-api` arranca únicamente después de que esa carga termina correctamente. Esto funciona tanto para una base nueva como para un volumen ya existente y no genera duplicados.
+
+Si se necesita repetir la importación manualmente con los servicios levantados, ejecutar desde la raíz del proyecto:
 
 ```bash
 docker compose exec mongo sh -c 'mongosh --quiet --host localhost --username "$MONGO_APP_USER" --password "$MONGO_APP_PASSWORD" --authenticationDatabase pokebo --file /docker-entrypoint-initdb.d/seed/import-species.js'
@@ -180,7 +182,7 @@ Ingresar la contraseña configurada en `MONGO_APP_PASSWORD` y ejecutar:
 db.species.countDocuments({})
 ```
 
-El resultado esperado es `671`.
+El resultado debe coincidir con la cantidad que informa el importador al finalizar (actualmente `691`).
 
 ## Verificación de correo al registrarse
 

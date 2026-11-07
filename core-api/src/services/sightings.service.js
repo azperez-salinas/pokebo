@@ -38,6 +38,37 @@ async function listNear({ h3Index, lat, lng, k = 1 }, options = {}) {
   return listInCells(cellsAround(center, k), options);
 }
 
+// Avistamientos vigentes dentro de un radio geográfico.
+// Utiliza el índice 2dsphere de Sighting.location.
+async function listInRadius(
+  { lat, lng, radiusMeters },
+  { excludeUserId } = {}
+) {
+  const filter = {
+    location: {
+      $geoWithin: {
+        $centerSphere: [
+          [lng, lat],
+          radiusMeters / 6378137,
+        ],
+      },
+    },
+    expiresAt: { $gt: new Date() },
+  };
+
+  if (excludeUserId) {
+    filter.user = { $ne: excludeUserId };
+  }
+
+  const sightings = await Sighting.find(filter)
+    .sort({ seenAt: -1 })
+    .limit(LIST_LIMIT)
+    .populate('species', 'commonName')
+    .lean();
+
+  return sightings.map(toPublicSighting);
+}
+
 // Crea el avistamiento que genera una captura (se ve en el mapa hasta que expira)
 async function createFromCapture(capture) {
   return Sighting.create({
@@ -51,4 +82,4 @@ async function createFromCapture(capture) {
   });
 }
 
-module.exports = { listNear, listInCells, createFromCapture };
+module.exports = { listNear, listInCells, listInRadius, createFromCapture };

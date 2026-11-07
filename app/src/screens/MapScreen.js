@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, ImageBackground, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Location from 'expo-location';
-import MapView, { Polygon } from 'react-native-maps';
+import MapView, { Marker, Polygon } from 'react-native-maps';
 import AuthButton from '../components/AuthButton';
 import useLocation from '../hooks/useLocation';
 import { getSightings } from '../services/map.service';
+import { getMyCaptures } from '../services/captures.service';
+import { photoSource } from '../services/images.service';
 import { H3_RESOLUTION, buildOverlay, cellOf, cellsForRegion } from '../utils/h3Overlay';
 import { buttons, colors, fonts, icons, palette } from '../styles';
 
@@ -14,6 +16,34 @@ const DEFAULT_REGION = { latitude: -34.9011, longitude: -56.1645, latitudeDelta:
 const USER_DELTA = 0.003;
 // Cada cuántos metros se recalcula la celda del usuario con el mapa abierto (las celdas miden ~28 m)
 const WATCH_DISTANCE_METERS = 5;
+
+const SIGHTINGS_REFRESH_MS = 45000;
+const REGION_DEBOUNCE_MS = 600;
+const SIGHTINGS_RADIUS_METERS = 500;
+
+function elapsedSince(seenAt) {
+  const timestamp = new Date(seenAt).getTime();
+  if (!Number.isFinite(timestamp)) {
+    return 'Fecha desconocida';
+  }
+
+  const minutes = Math.max(
+    0,
+    Math.floor((Date.now() - timestamp) / 60000)
+  );
+  if (minutes < 1) return 'Hace menos de 1 minuto';
+  if (minutes < 60) {
+    return `Hace ${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `Hace ${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+  }
+
+  const days = Math.floor(hours / 24);
+  return `Hace ${days} ${days === 1 ? 'día' : 'días'}`;
+}
 
 // Estilo de cada hexágono del overlay de desarrollo
 function hexStyle(hex) {
@@ -46,6 +76,87 @@ export default function MapScreen() {
   const [region, setRegion] = useState(null);
   const [sightings, setSightings] = useState([]);
   const [hexError, setHexError] = useState(null);
+
+  // Avistamientos geográficos visibles en el mapa.
+  const [mapSightings, setMapSightings] = useState([]);
+  const [mapLoading, setMapLoading] = useState(false);
+  const [mapError, setMapError] = useState(null);
+
+  // Avistamiento seleccionado y fotografía propia.
+  const [selectedSighting, setSelectedSighting] = useState(null);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [photoError, setPhotoError] = useState(null);
+
+  // Control de respuestas antiguas y cambios de región.
+  const mapRequestId = useRef(0);
+  const regionTimerRef = useRef(null);
+  const mountedRef = useRef(false);
+
+  const refreshMapSightings = useCallback(async () => {
+    const requestId = ++mapRequestId.current;
+    const currentRegion = regionRef.current;
+
+    setMapLoading(true);
+    setMapError(null);
+
+    try {
+      const list = await getSightings({
+        lat: currentRegion.latitude,
+        lng: currentRegion.longitude,
+        radiusMeters: SIGHTINGS_RADIUS_METERS,
+      });
+
+      if (!mountedRef.current || requestId !== mapRequestId.current) {
+        return;
+      }
+
+      setMapSightings(
+        Array.isArray(list)
+          ? list.filter((item) =>
+              item.location &&
+              Number.isFinite(item.location.lat) &&
+              Number.isFinite(item.location.lng)
+            )
+          : []
+      );
+    } catch (cause) {
+      if (!mountedRef.current || requestId !== mapRequestId.current) {
+        return;
+      }
+
+      setMapError(
+        cause?.message || 'No se pudieron cargar los avistamientos.'
+      );
+    } finally {
+      if (mountedRef.current && requestId === mapRequestId.current) {
+        setMapLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    // Consulta inicial al abrir el mapa.
+    refreshMapSightings();
+
+    // Actualización cada 45 segundos mientras el mapa esté montado.
+    const intervalId = setInterval(
+      refreshMapSightings,
+      SIGHTINGS_REFRESH_MS
+    );
+
+    return () => {
+      mountedRef.current = false;
+
+      clearInterval(intervalId);
+      clearTimeout(regionTimerRef.current);
+
+      // Invalida cualquier respuesta que todavía esté pendiente.
+      mapRequestId.current += 1;
+    };
+  }, [refreshMapSightings]);
 
   const centerOnUser = useCallback(async () => {
     setLocating(true);
@@ -100,7 +211,67 @@ export default function MapScreen() {
   const handleRegionChange = useCallback((next) => {
     regionRef.current = next;
     if (showHexes) setRegion(next);
-  }, [showHexes]);
+    // Espera a que el usuario termine de mover el mapa.
+    clearTimeout(regionTimerRef.current);
+
+    regionTimerRef.current = setTimeout(() => {
+      if (mountedRef.current) {
+        refreshMapSightings();
+      }
+    }, REGION_DEBOUNCE_MS);
+  }, [showHexes, refreshMapSightings]);
+
+  useEffect(() => {
+    if (!selectedSighting) {
+      setSelectedPhoto(null);
+      setPhotoError(null);
+      setPhotoLoading(false);
+      return;
+    }
+
+    let active = true;
+
+    setSelectedPhoto(null);
+    setPhotoError(null);
+    setPhotoLoading(false);
+
+    const speciesId = selectedSighting.species?.id;
+
+    if (!speciesId) {
+      return;
+    }
+
+    setPhotoLoading(true);
+
+    getMyCaptures({
+      speciesId,
+      limit: 1,
+    })
+      .then((response) => {
+        if (!active) return;
+
+        const capture = response?.captures?.[0];
+
+        // Solamente se utiliza una fotografía del usuario autenticado.
+        setSelectedPhoto(capture?.photoUrl ?? null);
+      })
+      .catch((cause) => {
+        if (!active) return;
+
+        setPhotoError(
+          cause?.message || 'No se pudo consultar tu colección.'
+        );
+      })
+      .finally(() => {
+        if (active) {
+          setPhotoLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedSighting]);
 
   const toggleHexes = useCallback(() => {
     setShowHexes((on) => !on);
@@ -158,7 +329,49 @@ export default function MapScreen() {
         {hexes?.map((hex) => (
           <Polygon key={hex.id} coordinates={hex.coordinates} tappable={false} {...hexStyle(hex)} />
         ))}
+        {mapSightings.map((sighting) => (
+          <Marker
+            key={sighting.id}
+            coordinate={{
+              latitude: sighting.location.lat,
+              longitude: sighting.location.lng,
+            }}
+            title={sighting.species?.commonName ?? 'Especie desconocida'}
+            onPress={() => setSelectedSighting(sighting)}
+            tracksViewChanges={false}
+          >
+            <View style={local.sightingMarker}>
+              <Text style={local.sightingMarkerText}>!</Text>
+            </View>
+          </Marker>
+        ))}
       </MapView>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Actualizar avistamientos"
+        accessibilityState={{ busy: mapLoading }}
+        onPress={refreshMapSightings}
+        disabled={mapLoading}
+        style={({ pressed }) => [
+          local.refreshButton,
+          pressed && local.refreshPressed,
+        ]}
+      >
+        {mapLoading ? (
+          <ActivityIndicator color={palette.azul} />
+        ) : (
+          <Text style={local.refreshText}>↻</Text>
+        )}
+      </Pressable>
+
+      {mapError ? (
+        <View style={local.mapErrorBox}>
+          <Text accessibilityRole="alert" style={local.mapErrorText}>
+            {mapError}
+          </Text>
+        </View>
+      ) : null}
 
       {needsPermission ? (
         <View style={local.card}>
@@ -228,6 +441,55 @@ export default function MapScreen() {
           ) : null}
         </>
       ) : null}
+
+      {selectedSighting ? (
+        <View style={local.sightingCard}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar información del avistamiento"
+            onPress={() => setSelectedSighting(null)}
+            style={local.closeButton}
+          >
+            <Text style={local.closeText}>X</Text>
+          </Pressable>
+
+          <Text style={local.sightingTitle}>
+            {selectedSighting.species?.commonName ?? 'Especie desconocida'}
+          </Text>
+
+          <Text style={local.sightingTime}>
+            {elapsedSince(selectedSighting.seenAt)}
+          </Text>
+
+          <View style={local.sightingPhotoFrame}>
+            {photoLoading ? (
+              <ActivityIndicator color={palette.azul} />
+            ) : selectedPhoto ? (
+              <Image
+                source={photoSource(selectedPhoto)}
+                style={local.sightingPhoto}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={local.unknownSpecies}>?</Text>
+            )}
+          </View>
+
+          {photoError ? (
+            <Text style={local.sightingInfo} accessibilityRole="alert">
+              {photoError}
+            </Text>
+          ) : (
+            <Text style={local.sightingInfo}>
+              {photoLoading
+                ? 'Buscando en tu colección...'
+                : selectedPhoto
+                  ? 'Especie registrada en tu colección'
+                  : 'Todavía no capturaste esta especie'}
+            </Text>
+          )}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -255,4 +517,149 @@ const local = StyleSheet.create({
   },
   devText: { fontFamily: fonts.body, fontSize: 16, lineHeight: 18, color: palette.tinta },
   devError: { fontFamily: fonts.body, fontSize: 16, lineHeight: 18, color: '#B00020' },
+
+  sightingMarker: {
+    width: 36,
+    height: 36,
+    backgroundColor: palette.amarillo,
+    borderWidth: 3,
+    borderColor: palette.tinta,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderBottomWidth: 6,
+  },
+
+  sightingMarkerText: {
+    fontFamily: fonts.display,
+    fontSize: 16,
+    color: palette.tinta,
+  },
+
+  refreshButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 48,
+    height: 48,
+    backgroundColor: palette.blanco,
+    borderWidth: 3,
+    borderBottomWidth: 6,
+    borderColor: palette.tinta,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  refreshPressed: {
+    transform: [{ translateY: 4 }],
+    borderBottomWidth: 3,
+  },
+
+  refreshText: {
+    fontFamily: fonts.body,
+    fontSize: 36,
+    color: palette.azul,
+    lineHeight: 40,
+  },
+
+  mapErrorBox: {
+    position: 'absolute',
+    top: 72,
+    left: 16,
+    right: 16,
+    backgroundColor: palette.blanco,
+    borderWidth: 3,
+    borderColor: palette.rosa,
+    borderRadius: 4,
+    padding: 8,
+  },
+
+  mapErrorText: {
+    fontFamily: fonts.body,
+    fontSize: 18,
+    color: palette.rosa,
+    textAlign: 'center',
+  },
+
+  sightingCard: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 150,
+    backgroundColor: palette.fondo,
+    borderWidth: 4,
+    borderBottomWidth: 8,
+    borderColor: palette.tinta,
+    borderRadius: 4,
+    padding: 16,
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  closeButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    backgroundColor: palette.rosa,
+    borderWidth: 2,
+    borderColor: palette.tinta,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+
+  closeText: {
+    fontFamily: fonts.display,
+    fontSize: 12,
+    color: palette.blanco,
+  },
+
+  sightingTitle: {
+    fontFamily: fonts.display,
+    fontSize: 13,
+    color: palette.tinta,
+    textAlign: 'center',
+    marginRight: 20,
+    marginLeft: 20,
+    marginTop: 8,
+  },
+
+  sightingTime: {
+    fontFamily: fonts.body,
+    fontSize: 22,
+    color: palette.azul,
+  },
+
+  sightingPhotoFrame: {
+    width: 110,
+    height: 110,
+    backgroundColor: palette.blanco,
+    borderWidth: 3,
+    borderColor: palette.tinta,
+    borderRadius: 4,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  sightingPhoto: {
+    width: '100%',
+    height: '100%',
+  },
+
+  unknownSpecies: {
+    fontFamily: fonts.display,
+    fontSize: 48,
+    color: palette.tinta,
+  },
+
+  sightingInfo: {
+    fontFamily: fonts.body,
+    fontSize: 18,
+    color: palette.tinta,
+    textAlign: 'center',
+  },
 });

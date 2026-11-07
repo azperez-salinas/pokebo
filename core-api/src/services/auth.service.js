@@ -1,4 +1,4 @@
-// Registro, login y emisión de JWT (firmados con JWT_PRIVATE_KEY).
+// Gestión de contraseña, refresh y logout. El login con segundo factor vive en login-verification.service.
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const config = require('../config');
@@ -16,26 +16,6 @@ const {
 } = require('./token.service');
 
 const BCRYPT_ROUNDS = 10;
-
-// Hash de relleno: si el username no existe igual se corre bcrypt, para no revelar por tiempo de respuesta
-const DUMMY_HASH = bcrypt.hashSync('pokebo-dummy-password', BCRYPT_ROUNDS);
-
-async function login(credentials) {
-  const { username, password } = credentials;
-  const user = await User.findOne({ username });
-
-  // Mismo error si no existe el usuario o si la contraseña está mal
-  const valid = await bcrypt.compare(password, user ? user.passwordHash : DUMMY_HASH);
-  if (!user || !valid) {
-    throw new AppError(401, 'INVALID_CREDENTIALS', 'Usuario o contraseña incorrectos');
-  }
-
-  user.lastLoginAt = new Date();
-  await user.save();
-
-  const tokens = await issueTokens(user);
-  return { user: toPublicUser(user), ...tokens };
-}
 
 async function changePassword(userId, currentPassword, newPassword) {
   const user = await User.findById(userId);
@@ -158,4 +138,4 @@ async function resetPassword(usernameOrEmail, code, newPassword) {
   return { message: 'Contraseña actualizada' };
 }
 
-module.exports = { login, changePassword, refresh, forgotPassword, resetPassword, logout };
+module.exports = { changePassword, refresh, forgotPassword, resetPassword, logout };

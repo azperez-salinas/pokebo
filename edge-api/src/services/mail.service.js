@@ -3,25 +3,47 @@ const config = require('../config');
 
 let smtpTransport;
 
-function emailHtml(code) {
+function messageFor(delivery) {
+  const minutes = Math.max(1, Math.ceil((delivery.expiresIn || 300) / 60));
+  if (delivery.purpose === 'login') {
+    return {
+      subject: 'Tu código para iniciar sesión en Pokebo',
+      heading: 'Confirmá tu inicio de sesión en Pokebo',
+      introduction: 'Usá este código para completar el inicio de sesión:',
+      validity: `Este código es válido por ${minutes} minutos.`,
+      disclaimer: 'Si no intentaste iniciar sesión, cambiá tu contraseña y no compartas este código.',
+    };
+  }
+  return {
+    subject: 'Tu código de verificación de Pokebo',
+    heading: 'Verificá tu cuenta de Pokebo',
+    introduction: 'Tu código de verificación es:',
+    validity: `Este código es válido por ${minutes} minutos.`,
+    disclaimer: 'Si no solicitaste este registro, ignorá este correo.',
+  };
+}
+
+function emailHtml(delivery) {
+  const message = messageFor(delivery);
   return `
     <main style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#172554">
-      <h1>Verificá tu cuenta de Pokebo</h1>
-      <p>Tu código de verificación es:</p>
-      <p style="font-size:32px;font-weight:bold;letter-spacing:8px">${code}</p>
-      <p>Este código es válido por 5 minutos.</p>
-      <p>Si no solicitaste este registro, ignorá este correo.</p>
+      <h1>${message.heading}</h1>
+      <p>${message.introduction}</p>
+      <p style="font-size:32px;font-weight:bold;letter-spacing:8px">${delivery.code}</p>
+      <p>${message.validity}</p>
+      <p>${message.disclaimer}</p>
     </main>`;
 }
 
-function emailText(code) {
+function emailText(delivery) {
+  const message = messageFor(delivery);
   return [
-    'Verificá tu cuenta de Pokebo',
+    message.heading,
     '',
-    `Tu código de verificación es: ${code}`,
-    'Este código es válido por 5 minutos.',
+    `${message.introduction} ${delivery.code}`,
+    message.validity,
     '',
-    'Si no solicitaste este registro, ignorá este correo.',
+    message.disclaimer,
   ].join('\n');
 }
 
@@ -32,24 +54,17 @@ function validateSmtpConfig() {
     ['SMTP_APP_PASSWORD', config.smtpAppPassword],
     ['MAIL_FROM', config.mailFrom],
   ].filter(([, value]) => !value).map(([name]) => name);
-
-  if (missing.length) {
-    throw new Error(`Falta configuración SMTP en el Edge API: ${missing.join(', ')}`);
-  }
+  if (missing.length) throw new Error(`Falta configuración SMTP en el Edge API: ${missing.join(', ')}`);
 }
 
 function getSmtpTransport() {
   if (smtpTransport) return smtpTransport;
-
   validateSmtpConfig();
   smtpTransport = nodemailer.createTransport({
     host: config.smtpHost,
     port: config.smtpPort,
     secure: config.smtpSecure,
-    auth: {
-      user: config.smtpUser,
-      pass: config.smtpAppPassword,
-    },
+    auth: { user: config.smtpUser, pass: config.smtpAppPassword },
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
@@ -57,25 +72,25 @@ function getSmtpTransport() {
   return smtpTransport;
 }
 
-async function sendWithSmtp({ email, code }) {
+async function sendWithSmtp(delivery) {
+  const message = messageFor(delivery);
   const info = await getSmtpTransport().sendMail({
     from: config.mailFrom,
-    to: email,
-    subject: 'Tu código de verificación de Pokebo',
-    text: emailText(code),
-    html: emailHtml(code),
+    to: delivery.email,
+    subject: message.subject,
+    text: emailText(delivery),
+    html: emailHtml(delivery),
   });
-
   return { id: info.messageId, provider: 'smtp' };
 }
 
-async function sendRegistrationCode(delivery) {
+async function sendCodeEmail(delivery) {
   if (config.mailProvider === 'console') {
-    console.log(`[MAIL MOCK] Código de registro para ${delivery.email}: ${delivery.code} (válido 5 minutos)`);
+    console.log(`[MAIL MOCK] Código de ${delivery.purpose || 'registro'} para ${delivery.email}: ${delivery.code}`);
     return { provider: 'console' };
   }
   if (config.mailProvider === 'smtp') return sendWithSmtp(delivery);
   throw new Error(`MAIL_PROVIDER no soportado: ${config.mailProvider}`);
 }
 
-module.exports = { sendRegistrationCode };
+module.exports = { sendCodeEmail };

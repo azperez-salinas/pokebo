@@ -79,23 +79,6 @@ EXPO_PUBLIC_API_URL=http://192.168.1.20:3000
 No se agrega `/api` ni `/api/v1`: el cliente lo incorpora automáticamente. Cada vez que se modifica
 `app/.env` hay que detener Metro y volver a iniciarlo con la caché limpia.
 
-### Firewall de Windows
-
-Para que el teléfono pueda acceder al Edge, abrir PowerShell como administrador y habilitar solamente el
-puerto TCP 3000 en redes privadas:
-
-```powershell
-New-NetFirewallRule `
-  -DisplayName "Pokebo Edge API (TCP 3000)" `
-  -Direction Inbound `
-  -Action Allow `
-  -Protocol TCP `
-  -LocalPort 3000 `
-  -Profile Private
-```
-
-No se deben publicar los puertos del Core, MongoDB o Redis.
-
 ## Levantar el proyecto
 
 ### 1. Backend y bases de datos
@@ -171,12 +154,11 @@ Si la app muestra `No se pudo conectar al servidor. Revisá la URL del Edge API 
 3. Reiniciar Metro con `npm start -- --clear` después de cambiar el `.env`.
 4. Abrir la URL de comprobación desde el navegador del teléfono.
 5. Verificar que ambos dispositivos estén en la misma Wi-Fi y que no sea una red de invitados.
-6. Desactivar temporalmente VPN o datos móviles si interfieren con la ruta local.
-7. Confirmar que la red de Windows esté marcada como privada y que exista la regla TCP 3000.
+
 
 ## Cargar especies en MongoDB
 
-El catálogo inicial de 670 especies se encuentra en `mongo-init/seed/species.json`.
+El catálogo inicial de 671 especies se encuentra en `mongo-init/seed/species.json`.
 
 Con MongoDB levantado, ejecutar desde la raíz del proyecto:
 
@@ -198,7 +180,7 @@ Ingresar la contraseña configurada en `MONGO_APP_PASSWORD` y ejecutar:
 db.species.countDocuments({})
 ```
 
-El resultado esperado es `670`.
+El resultado esperado es `671`.
 
 ## Verificación de correo al registrarse
 
@@ -251,12 +233,3 @@ Todos los archivos `.env` reales están ignorados por Git. Los archivos importan
 Los archivos `.env.example` correspondientes documentan los nombres de las variables y son los únicos que
 se pueden compartir o versionar sin cifrado.
 
-### Compartir la configuración con el equipo
-
-No se deben subir los `.env` reales en texto plano a una carpeta compartida de Drive. La opción recomendada
-es guardar cada secreto en un gestor de contraseñas o de secretos con acceso por usuario y auditoría. Si el
-equipo necesariamente utiliza Drive, los `.env` deben colocarse dentro de un archivo cifrado y la contraseña
-debe compartirse por un canal diferente. Cuando una persona deja el equipo, se deben rotar como mínimo
-`SMTP_APP_PASSWORD`, `SERVICE_SHARED_SECRET`, las claves JWT y las contraseñas de MongoDB y Redis.
-
-Nunca se deben copiar secretos a capturas de pantalla, tickets, chats, documentación ni builds de la app.

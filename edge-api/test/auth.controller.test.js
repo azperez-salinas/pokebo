@@ -20,7 +20,7 @@ require.cache[mailPath] = {
   filename: mailPath,
   loaded: true,
   exports: {
-    sendRegistrationCode: async (delivery) => {
+    sendCodeEmail: async (delivery) => {
       delivered = delivery;
       if (deliveryError) throw deliveryError;
     },
@@ -47,7 +47,7 @@ test('envia el correo pero nunca expone la orden interna al cliente', async () =
   deliveryError = null;
   const response = responseDouble();
 
-  await controller.registrationWithEmail(
+  await controller.forwardWithEmailDelivery(
     { originalUrl: '/api/v1/auth/registrations', method: 'POST', body: {}, headers: {} },
     response,
     assert.fail,
@@ -70,7 +70,7 @@ test('una falla del proveedor no cambia la respuesta publica', async () => {
   const originalError = console.error;
   console.error = () => {};
   try {
-    await controller.registrationWithEmail(
+    await controller.forwardWithEmailDelivery(
       { originalUrl: '/api/v1/auth/registrations', method: 'POST', body: {}, headers: {} },
       response,
       assert.fail,

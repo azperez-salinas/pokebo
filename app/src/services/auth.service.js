@@ -16,6 +16,14 @@ export async function login(credentials) {
   return request('/auth/login', { method: 'POST', body: credentials });
 }
 
+export async function verifyLogin(challengeId, code) {
+  return request('/auth/login/verify', { method: 'POST', body: { challengeId, code } });
+}
+
+export async function resendLogin(challengeId) {
+  return request('/auth/login/resend', { method: 'POST', body: { challengeId } });
+}
+
 export async function refresh(refreshToken) {
   return request('/auth/refresh', { method: 'POST', body: { refreshToken } });
 }

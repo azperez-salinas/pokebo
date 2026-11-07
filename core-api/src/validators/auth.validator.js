@@ -27,6 +27,13 @@ const login = Joi.object({
   password: Joi.string().required(),
 });
 
+const verifyLogin = Joi.object({
+  challengeId,
+  code: Joi.string().trim().uppercase().length(6).pattern(/^[A-Z0-9]+$/).required(),
+});
+
+const resendLogin = Joi.object({ challengeId });
+
 const changePassword = Joi.object({
   currentPassword: Joi.string().required(),
   newPassword: Joi.string().min(PASSWORD_MIN_LENGTH).required(),
@@ -56,6 +63,8 @@ module.exports = {
   verifyRegistration,
   resendRegistration,
   login,
+  verifyLogin,
+  resendLogin,
   changePassword,
   refresh,
   forgotPassword,

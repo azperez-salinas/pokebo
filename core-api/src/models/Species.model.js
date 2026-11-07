@@ -14,6 +14,7 @@ const speciesSchema = new mongoose.Schema(
     diet: { type: String },
     distribution: { type: String },
     conservationStatus: { type: String },
+    category: { type: String }, // rareza: comun, poco_comun, raro, muy_raro o domestico
     funFacts: { type: [String], default: [] },
   },
   { timestamps: true },

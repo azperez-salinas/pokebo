@@ -7,8 +7,12 @@ import { fonts, icons, palette } from '../styles';
 
 const backArrow = icons.arrows.arrowLeft;
 
-export default function EmailVerificationForm({ pending, onBack }) {
-  const { verifyRegistration, resendRegistration } = useAuth();
+export default function EmailVerificationForm({ pending, purpose, onBack }) {
+  const {
+    verifyRegistration, resendRegistration,
+    verifyLogin, resendLogin,
+  } = useAuth();
+  const isLogin = purpose === 'login';
   const [code, setCode] = useState('');
   const [cooldown, setCooldown] = useState(pending.resendAfter || 60);
   const [error, setError] = useState('');
@@ -36,7 +40,8 @@ export default function EmailVerificationForm({ pending, onBack }) {
     setSubmitting(true);
     setError('');
     try {
-      await verifyRegistration(pending.challengeId, code);
+      const verifyCode = isLogin ? verifyLogin : verifyRegistration;
+      await verifyCode(pending.challengeId, code);
     } catch (cause) {
       setError(cause.message || 'No se pudo verificar el código.');
     } finally {
@@ -50,7 +55,8 @@ export default function EmailVerificationForm({ pending, onBack }) {
     setError('');
     setInfo('');
     try {
-      const result = await resendRegistration(pending.challengeId);
+      const resendCode = isLogin ? resendLogin : resendRegistration;
+      const result = await resendCode(pending.challengeId);
       setCode('');
       setCooldown(result.resendAfter || 60);
       setInfo('Enviamos un código nuevo. El anterior ya no es válido.');
@@ -69,13 +75,15 @@ export default function EmailVerificationForm({ pending, onBack }) {
       </Pressable>
 
       <View style={styles.heading}>
-        <Text style={styles.title}>REVISA TU CORREO</Text>
-        <Text style={styles.subtitle}>Ingresá el código alfanumérico de 6 caracteres que te enviamos.</Text>
+        <Text style={styles.title}>{isLogin ? 'CONFIRMÁ TU INICIO' : 'REVISÁ TU CORREO'}</Text>
+        <Text style={styles.subtitle}>
+          Ingresá el código alfanumérico de 6 caracteres que enviamos al correo asociado.
+        </Text>
         <Text style={styles.expiration}>El código es válido por 5 minutos.</Text>
       </View>
 
       <View style={styles.form}>
-        <Text style={styles.fieldLabel}>CODIGO DE VERIFICACION</Text>
+        <Text style={styles.fieldLabel}>CÓDIGO DE VERIFICACIÓN</Text>
         <TextInput
           accessibilityLabel="Código de verificación"
           autoCapitalize="characters"
@@ -92,11 +100,7 @@ export default function EmailVerificationForm({ pending, onBack }) {
         />
         {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
         {info ? <Text accessibilityRole="status" style={styles.info}>{info}</Text> : null}
-        <AuthButton
-          label={submitting ? 'CARGANDO...' : 'VERIFICAR'}
-          disabled={submitting}
-          onPress={verify}
-        />
+        <AuthButton label={submitting ? 'CARGANDO...' : 'VERIFICAR'} disabled={submitting} onPress={verify} />
         <Pressable
           accessibilityRole="button"
           disabled={submitting || cooldown > 0}

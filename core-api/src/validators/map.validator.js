@@ -9,7 +9,7 @@ const sightings = {
     lat: Joi.number().min(-90).max(90),
     lng: Joi.number().min(-180).max(180),
     k: Joi.number().integer().min(1).max(2).default(1),
-    radiusMeters: 500,
+    radiusMeters: Joi.number().integer().valid(500),
   })
     .xor('h3Index', 'lat')
     .with('lat', 'lng')

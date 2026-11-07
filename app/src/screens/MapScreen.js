@@ -15,7 +15,7 @@ const USER_DELTA = 0.01;
 
 const SIGHTINGS_REFRESH_MS = 45000;
 const REGION_DEBOUNCE_MS = 600;
-const SIGHTINGS_RADIUS_METERS = 1000;
+const SIGHTINGS_RADIUS_METERS = 500;
 
 function elapsedSince(seenAt) {
   const timestamp = new Date(seenAt).getTime();

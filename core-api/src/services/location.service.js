@@ -40,13 +40,14 @@ function nearbyNotificationText(nearby) {
   if (nearby.length === 1) {
     return {
       title: `${nameOf(nearby[0])} cerca de vos`,
-      body: nearby[0].zone === 'own' ? 'Lo vieron hace poco en tu zona.' : 'Lo vieron hace poco en una zona vecina.',
+      body: nearby[0].zone === 'own' ? 'Lo vieron en tu zona.' : 'Lo vieron en una zona vecina.',
     };
   }
   const names = [...new Set(nearby.map(nameOf))];
-  const rest = names.length - 3;
-  const shown = names.slice(0, 3).join(', ');
-  return { title: `${nearby.length} avistamientos cerca de vos`, body: rest > 0 ? `${shown} y ${rest} más.` : `${shown}.` };
+  // Corto para que entre en una línea de la notificación (igual que en la app)
+  const rest = names.length - 2;
+  const shown = names.slice(0, 2).join(', ');
+  return { title: `${nearby.length} avistamientos cerca`, body: rest > 0 ? `${shown} y ${rest} más.` : `${shown}.` };
 }
 
 // El usuario avisa en qué celda está. Se guarda y, si tiene los avisos activados, se devuelven los
@@ -128,7 +129,7 @@ async function notifyUsersAboutSighting(sighting, species) {
     const saved = await notificationsService.createSafe(userId, {
       type: 'nearby',
       title: `${species.commonName || 'Un animal'} cerca de vos`,
-      body: 'Se registró un nuevo avistamiento en tu zona.',
+      body: 'Nuevo avistamiento en tu zona.',
       data: { sightingId: sighting._id, h3Index: sighting.h3Index },
     });
     if (saved) notified += 1;

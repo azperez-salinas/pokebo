@@ -2,7 +2,8 @@
 // nearby: [{ id, species: { commonName } | null, zone: 'own' | 'near', ... }]. Devuelve null si no hay nada que avisar.
 
 export const NOTIFICATION_TYPE = 'nearby-sighting';
-const MAX_NAMES = 3;
+// Android muestra el aviso en una sola línea hasta que se expande: el cuerpo tiene que ser corto para no cortarse.
+const MAX_NAMES = 2;
 
 const nameOf = (sighting) => sighting.species?.commonName || 'un animal';
 
@@ -14,7 +15,7 @@ export function buildNearbyNotification(nearby) {
     const [sighting] = nearby;
     return {
       title: `${nameOf(sighting)} cerca de vos`,
-      body: sighting.zone === 'own' ? 'Lo vieron hace poco en tu zona.' : 'Lo vieron hace poco en una zona vecina.',
+      body: sighting.zone === 'own' ? 'Lo vieron en tu zona.' : 'Lo vieron en una zona vecina.',
       data,
     };
   }
@@ -23,7 +24,7 @@ export function buildNearbyNotification(nearby) {
   const shown = names.slice(0, MAX_NAMES).join(', ');
   const rest = names.length - MAX_NAMES;
   return {
-    title: `${nearby.length} avistamientos cerca de vos`,
+    title: `${nearby.length} avistamientos cerca`,
     body: rest > 0 ? `${shown} y ${rest} más.` : `${shown}.`,
     data,
   };

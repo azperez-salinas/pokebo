@@ -14,23 +14,23 @@ test('un avistamiento en la misma celda', async () => {
   const { buildNearbyNotification, NOTIFICATION_TYPE } = await load();
   const n = buildNearbyNotification([sighting('1', 'Carpincho', 'own')]);
   assert.equal(n.title, 'Carpincho cerca de vos');
-  assert.equal(n.body, 'Lo vieron hace poco en tu zona.');
+  assert.equal(n.body, 'Lo vieron en tu zona.');
   assert.deepEqual(n.data, { type: NOTIFICATION_TYPE, sightingIds: ['1'] });
 });
 
 test('un avistamiento en una celda vecina', async () => {
   const { buildNearbyNotification } = await load();
-  assert.equal(buildNearbyNotification([sighting('1', 'Zorro')]).body, 'Lo vieron hace poco en una zona vecina.');
+  assert.equal(buildNearbyNotification([sighting('1', 'Zorro')]).body, 'Lo vieron en una zona vecina.');
 });
 
-test('varios avistamientos: nombres únicos, máximo tres y resto', async () => {
+test('varios avistamientos: nombres únicos, máximo dos y resto', async () => {
   const { buildNearbyNotification } = await load();
   const n = buildNearbyNotification([
     sighting('1', 'Zorro'), sighting('2', 'Zorro'), sighting('3', 'Ñandú'),
     sighting('4', 'Carpincho'), sighting('5', 'Hornero'),
   ]);
-  assert.equal(n.title, '5 avistamientos cerca de vos');
-  assert.equal(n.body, 'Zorro, Ñandú, Carpincho y 1 más.');
+  assert.equal(n.title, '5 avistamientos cerca');
+  assert.equal(n.body, 'Zorro, Ñandú y 2 más.');
   assert.deepEqual(n.data.sightingIds, ['1', '2', '3', '4', '5']);
 });
 

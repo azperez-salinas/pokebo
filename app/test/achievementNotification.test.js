@@ -23,3 +23,9 @@ test('varios logros: cantidad en el título y nombres en el cuerpo', async () =>
   assert.equal(n.title, '¡2 logros desbloqueados!');
   assert.equal(n.body, 'Uno, Dos');
 });
+
+test('más de dos logros: se resumen para que entren en una línea', async () => {
+  const { buildAchievementNotification } = await load();
+  const n = buildAchievementNotification([{ code: 'a', name: 'Uno' }, { code: 'b', name: 'Dos' }, { code: 'c', name: 'Tres' }]);
+  assert.equal(n.body, 'Uno, Dos y 1 más');
+});

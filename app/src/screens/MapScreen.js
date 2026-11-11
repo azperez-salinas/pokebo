@@ -18,7 +18,7 @@ const USER_DELTA = 0.003;
 const WATCH_DISTANCE_METERS = 5;
 
 const SIGHTINGS_REFRESH_MS = 45000;
-const SIGHTINGS_RADIUS_METERS = 500;
+const SIGHTINGS_RADIUS_METERS = 250;
 
 function elapsedSince(seenAt) {
   const timestamp = new Date(seenAt).getTime();
@@ -91,28 +91,30 @@ export default function MapScreen() {
   // Control de respuestas antiguas.
   const mapRequestId = useRef(0);
   const mountedRef = useRef(false);
+  const mapFetchingRef = useRef(false);
 
   const refreshMapSightings = useCallback(async () => {
-    const userLocation = userLocationRef.current;
-    if (!userLocation) {
-      mapRequestId.current += 1;
-      if (mountedRef.current) {
-        setMapSightings([]);
-        setMapLoading(false);
-        setMapError(null);
-      }
-      return;
-    }
+    // Evitar consultas simultáneas.
+    if (mapFetchingRef.current) return;
 
+    mapFetchingRef.current = true;
     const requestId = ++mapRequestId.current;
+
 
     setMapLoading(true);
     setMapError(null);
 
     try {
+      // Obtener la posición GPS real, nunca el centro del mapa.
+      const { lat, lng } = await getCurrentPosition();
+
+      if (!mountedRef.current || requestId !== mapRequestId.current) {
+        return;
+      }
+
       const list = await getSightings({
-        lat: userLocation.latitude,
-        lng: userLocation.longitude,
+        lat,
+        lng,
         radiusMeters: SIGHTINGS_RADIUS_METERS,
       });
 
@@ -130,24 +132,32 @@ export default function MapScreen() {
           : []
       );
     } catch (cause) {
-      if (!mountedRef.current || requestId !== mapRequestId.current) {
-        return;
+      if (mountedRef.current && requestId === mapRequestId.current) {
+        setMapError(
+          cause?.message || 'No se pudieron cargar los avistamientos.'
+        );
       }
 
-      setMapError(
-        cause?.message || 'No se pudieron cargar los avistamientos.'
-      );
     } finally {
+      mapFetchingRef.current = false;
+
       if (mountedRef.current && requestId === mapRequestId.current) {
         setMapLoading(false);
       }
     }
-  }, []);
+  }, [getCurrentPosition]);
 
   useEffect(() => {
     mountedRef.current = true;
 
-    // Consulta inicial al abrir el mapa.
+    if (!permission?.granted) {
+      return () => {
+        mountedRef.current = false;
+        mapRequestId.current += 1;
+      };
+    }
+
+    // Consulta inicial con ubicación disponible.
     refreshMapSightings();
 
     // Actualización cada 45 segundos mientras el mapa esté montado.
@@ -159,15 +169,17 @@ export default function MapScreen() {
       if (state === 'active') refreshMapSightings();
     });
 
+
     return () => {
       mountedRef.current = false;
 
       clearInterval(intervalId);
       appStateSubscription.remove();
+
       // Invalida cualquier respuesta que todavía esté pendiente.
       mapRequestId.current += 1;
     };
-  }, [refreshMapSightings]);
+  }, [permission?.granted, refreshMapSightings]);
 
   const centerOnUser = useCallback(async () => {
     setLocating(true);
@@ -228,7 +240,9 @@ export default function MapScreen() {
 
   const handleRegionChange = useCallback((next) => {
     regionRef.current = next;
-    if (showHexes) setRegion(next);
+    if (showHexes) {
+      setRegion(next);
+    }
   }, [showHexes]);
 
   useEffect(() => {
@@ -349,10 +363,14 @@ export default function MapScreen() {
             title={sighting.species?.commonName ?? 'Especie desconocida'}
             onPress={() => setSelectedSighting(sighting)}
             tracksViewChanges={false}
+            anchor={{ x: 0.5, y: 0.5 }}
           >
-            <View style={local.sightingMarker}>
-              <Text style={local.sightingMarkerText}>!</Text>
-            </View>
+            <Image
+              source={require('../assets/markers/avistamiento.png')}
+              style={local.sightingMarkerImage}
+              resizeMode="contain"
+              fadeDuration={0}
+            />
           </Marker>
         ))}
       </MapView>
@@ -528,24 +546,6 @@ const local = StyleSheet.create({
   devText: { fontFamily: fonts.body, fontSize: 16, lineHeight: 18, color: palette.tinta },
   devError: { fontFamily: fonts.body, fontSize: 16, lineHeight: 18, color: '#B00020' },
 
-  sightingMarker: {
-    width: 36,
-    height: 36,
-    backgroundColor: palette.amarillo,
-    borderWidth: 3,
-    borderColor: palette.tinta,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderBottomWidth: 6,
-  },
-
-  sightingMarkerText: {
-    fontFamily: fonts.display,
-    fontSize: 16,
-    color: palette.tinta,
-  },
-
   refreshButton: {
     position: 'absolute',
     top: 72,
@@ -590,6 +590,11 @@ const local = StyleSheet.create({
     fontSize: 18,
     color: palette.rosa,
     textAlign: 'center',
+  },
+
+  sightingMarkerImage: {
+    width: 50,
+    height: 50,
   },
 
   sightingCard: {

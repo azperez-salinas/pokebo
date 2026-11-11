@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
 import AuthButton from '../components/AuthButton';
+import AuthImage from '../components/AuthImage';
 import { getSpecies } from '../services/species.service';
-import { speciesImageSource } from '../services/images.service';
+import { getMyCaptures } from '../services/captures.service';
+import { photoSource, speciesImageSource } from '../services/images.service';
 import { colors, fonts, palette } from '../styles';
 
 const FIELDS = [
@@ -12,9 +14,35 @@ const FIELDS = [
   ['CONSERVACIÓN', 'conservationStatus'],
 ];
 
+// Carrusel horizontal paginado con todas las fotos que el usuario sacó de la especie
+function PhotoCarousel({ photos }) {
+  const [width, setWidth] = useState(0);
+  const [index, setIndex] = useState(0);
+  return (
+    <View onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
+      {width > 0 ? (
+        <FlatList
+          data={photos}
+          keyExtractor={(item) => String(item.id)}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(event) => setIndex(Math.round(event.nativeEvent.contentOffset.x / width))}
+          getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+          renderItem={({ item }) => (
+            <AuthImage source={photoSource(item.photoUrl)} style={[local.photo, { width }]} resizeMode="cover" />
+          )}
+        />
+      ) : null}
+      {photos.length > 1 ? <Text style={local.counter}>{index + 1} / {photos.length}</Text> : null}
+    </View>
+  );
+}
+
 // Ficha completa de la especie (GET /species/:id) con la cantidad de capturas del usuario.
 export default function SpeciesDetailScreen({ speciesId, onBack }) {
   const [species, setSpecies] = useState(null);
+  const [photos, setPhotos] = useState([]);
   const [error, setError] = useState(null);
   const [attempt, setAttempt] = useState(0);
 
@@ -24,6 +52,10 @@ export default function SpeciesDetailScreen({ speciesId, onBack }) {
     getSpecies(speciesId)
       .then((data) => active && setSpecies(data.species))
       .catch((cause) => active && setError(cause));
+    // Fotos del usuario de esta especie, para el carrusel (si falla, se muestra la imagen del catálogo)
+    getMyCaptures({ speciesId, limit: 50 })
+      .then((data) => active && setPhotos(data.captures))
+      .catch(() => {});
     return () => {
       active = false;
     };
@@ -42,8 +74,10 @@ export default function SpeciesDetailScreen({ speciesId, onBack }) {
         <ActivityIndicator accessibilityLabel="Cargando especie" color={colors.accent} style={local.loader} />
       ) : (
         <>
-          {species.imagesIds?.[0] ? (
-            <Image source={speciesImageSource(species.imagesIds[0])} style={local.photo} resizeMode="cover" />
+          {photos.length > 0 ? (
+            <PhotoCarousel photos={photos} />
+          ) : species.imagesIds?.[0] ? (
+            <AuthImage source={speciesImageSource(species.imagesIds[0])} style={local.photo} resizeMode="cover" />
           ) : null}
           <View style={local.block}>
             <Text accessibilityRole="header" style={local.name}>{species.commonName}</Text>
@@ -79,6 +113,7 @@ const local = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.fondo },
   content: { padding: 16, gap: 12 },
   loader: { marginTop: 32 },
+  counter: { fontFamily: fonts.display, fontSize: 10, color: palette.tinta, textAlign: 'center', marginTop: 8 },
   photo: { width: '100%', aspectRatio: 1, borderWidth: 3, borderColor: palette.tinta, borderRadius: 4, backgroundColor: palette.linea },
   block: { backgroundColor: palette.blanco, borderWidth: 3, borderColor: palette.tinta, borderRadius: 4, padding: 12, gap: 6 },
   name: { fontFamily: fonts.display, fontSize: 16, lineHeight: 24, color: palette.tinta },

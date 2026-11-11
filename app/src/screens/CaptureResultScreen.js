@@ -2,6 +2,7 @@ import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import AuthButton from '../components/AuthButton';
 import Panel from '../components/Panel';
+import AuthImage from '../components/AuthImage';
 import { photoSource } from '../services/images.service';
 import styles, { icons, palette, fonts } from '../styles';
 
@@ -66,7 +67,7 @@ export default function CaptureResultScreen({ result, error, onBack, onNext }) {
       </View>
 
       <Panel style={local.photoPanel}>
-        <Image source={photoSource(capture.photoUrl)} style={local.photo} resizeMode="cover" accessibilityLabel="Foto de la captura" />
+        <AuthImage source={photoSource(capture.photoUrl)} style={local.photo} resizeMode="cover" accessibilityLabel="Foto de la captura" />
         {capture.isNewSpecies ? (
           <View style={local.badge}>
             <Text style={local.badgeText}>NUEVA</Text>

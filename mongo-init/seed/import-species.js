@@ -9,7 +9,7 @@ const PATH = '/docker-entrypoint-initdb.d/seed/species.json';
 const DB_NAME = 'pokebo';
 const COLLECTION_NAME = 'species';
 const BATCH_SIZE = 100;
-const RARITIES = new Set(['comun', 'poco_comun', 'raro', 'muy_raro']);
+const RARITIES = new Set(['comun', 'poco_comun', 'raro', 'muy_raro', 'domestico']);
 const FIELDS = [
   'commonName', 'class', 'family', 'scientificName', 'description',
   'diet', 'category', 'habitat', 'conservationStatus', 'funFact'
@@ -60,7 +60,7 @@ function loadAndValidate() {
 }
 
 async function run() {
-  // Validar los 671 registros ANTES de escribir el primero.
+  // Validar todo el catalogo ANTES de escribir el primer registro.
   const items = loadAndValidate();
   print('Archivo validado: ' + items.length + ' especies, sin duplicados ni campos invalidos.');
 

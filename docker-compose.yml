@@ -41,6 +41,8 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+      mongo-seed:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     restart: on-failure
@@ -66,6 +68,31 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  # Sincroniza el catalogo en cada `docker compose up`. El importador usa upsert,
+  # por lo que tambien actualiza volumenes existentes sin duplicar especies.
+  mongo-seed:
+    image: mongo:7
+    environment:
+      MONGO_APP_USER: ${MONGO_APP_USER:-pokebo_app}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?falta MONGO_APP_PASSWORD en .env}
+    command:
+      - sh
+      - -c
+      - >-
+        exec mongosh --quiet --host mongo
+        --username "$$MONGO_APP_USER"
+        --password "$$MONGO_APP_PASSWORD"
+        --authenticationDatabase pokebo
+        --file /docker-entrypoint-initdb.d/seed/import-species.js
+    volumes:
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - data
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: "no"
 
   redis:
     image: redis:7-alpine

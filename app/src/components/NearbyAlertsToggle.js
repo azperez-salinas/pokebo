@@ -6,7 +6,6 @@ import { fonts, palette } from '../styles';
 
 const ERRORS = {
   FOREGROUND_DENIED: 'Necesitamos el permiso de ubicación para avisarte. Habilitalo en los ajustes del teléfono.',
-  BACKGROUND_DENIED: 'En los ajustes de ubicación de la app elegí "Permitir todo el tiempo" para recibir avisos con la app cerrada.',
   NOTIFICATIONS_DENIED: 'Activá las notificaciones de la app en los ajustes del teléfono para recibir los avisos.',
 };
 
@@ -45,7 +44,7 @@ export default function NearbyAlertsToggle() {
         <Text style={[styles.state, enabled && styles.stateOn]}>{pending ? '...' : enabled ? 'SÍ' : 'NO'}</Text>
       </Pressable>
       <Text style={styles.hint}>
-        Te avisamos cuando entrás a una zona donde otros vieron animales, aunque tengas la app cerrada.
+        Te avisamos sobre nuevos avistamientos cercanos mientras usás la app.
       </Text>
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
     </View>

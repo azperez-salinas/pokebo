@@ -7,6 +7,7 @@ class FakeRedis {
   constructor() {
     this.values = new Map();
     this.sets = new Map();
+    this.sortedSets = new Map();
     this.ttls = new Map();
   }
 
@@ -21,7 +22,7 @@ class FakeRedis {
   async del(keys) {
     let deleted = 0;
     for (const key of [keys].flat()) {
-      deleted += Number(this.values.delete(key)) + Number(this.sets.delete(key));
+      deleted += Number(this.values.delete(key)) + Number(this.sets.delete(key)) + Number(this.sortedSets.delete(key));
       this.ttls.delete(key);
     }
     return deleted;
@@ -36,6 +37,49 @@ class FakeRedis {
   }
 
   async expire(key, seconds) { this.ttls.set(key, seconds); return 1; }
+
+  async zAdd(key, { score, value }) {
+    const set = this.sortedSets.get(key) || new Map();
+    const added = Number(!set.has(value));
+    set.set(value, score);
+    this.sortedSets.set(key, set);
+    return added;
+  }
+
+  async zRem(key, member) { return Number(this.sortedSets.get(key)?.delete(member) || false); }
+
+  async zRemRangeByScore(key, min, max) {
+    const set = this.sortedSets.get(key);
+    if (!set) return 0;
+    let removed = 0;
+    for (const [member, score] of set) {
+      if (score >= Number(min) && score <= Number(max)) {
+        set.delete(member);
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+
+  async zRangeByScore(key, min, max) {
+    const upper = max === '+inf' ? Infinity : Number(max);
+    return [...(this.sortedSets.get(key) || new Map())]
+      .filter(([, score]) => score >= Number(min) && score <= upper)
+      .sort((a, b) => a[1] - b[1])
+      .map(([member]) => member);
+  }
+
+  multi() {
+    const operations = [];
+    const chain = {
+      set: (...args) => { operations.push(() => this.set(...args)); return chain; },
+      zAdd: (...args) => { operations.push(() => this.zAdd(...args)); return chain; },
+      zRem: (...args) => { operations.push(() => this.zRem(...args)); return chain; },
+      expire: (...args) => { operations.push(() => this.expire(...args)); return chain; },
+      exec: async () => Promise.all(operations.map((operation) => operation())),
+    };
+    return chain;
+  }
 }
 
 // --- Modelos simulados: User y Sighting con las consultas que usan los servicios ---
@@ -48,15 +92,38 @@ const User = {
     const query = { select: () => query, lean: async () => user };
     return query;
   },
+  find(filter) {
+    const allowed = new Set(filter._id.$in.map(String));
+    const result = [...users.values()].filter((user) => (
+      allowed.has(String(user._id)) && user.settings?.nearbyAlerts === true
+    ));
+    const query = { select: () => query, lean: async () => result };
+    return query;
+  },
+};
+
+const distanceMeters = ([lngA, latA], [lngB, latB]) => {
+  const radians = (degrees) => degrees * Math.PI / 180;
+  const dLat = radians(latB - latA);
+  const dLng = radians(lngB - lngA);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(radians(latA)) * Math.cos(radians(latB)) * Math.sin(dLng / 2) ** 2;
+  return 6378137 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
 const Sighting = {
   find(filter) {
-    let result = sightings.filter((s) => (
-      filter.h3Index.$in.includes(s.h3Index)
-      && s.expiresAt > filter.expiresAt.$gt
-      && (!filter.user || String(s.user) !== String(filter.user.$ne))
-    ));
+    let result = sightings.filter((s) => {
+      let spatialMatch = true;
+      if (filter.h3Index) spatialMatch = filter.h3Index.$in.includes(s.h3Index);
+      if (filter.location?.$geoWithin) {
+        const [center, angularRadius] = filter.location.$geoWithin.$centerSphere;
+        spatialMatch = distanceMeters(s.location.coordinates, center) <= angularRadius * 6378137;
+      }
+      return spatialMatch
+        && s.expiresAt > filter.expiresAt.$gt
+        && (!filter.user || String(s.user) !== String(filter.user.$ne));
+    });
     const query = {
       sort: () => { result = [...result].sort((a, b) => b.seenAt - a.seenAt); return query; },
       limit: (n) => { result = result.slice(0, n); return query; },
@@ -110,9 +177,11 @@ function addSighting({ h3Index, user = 'otro', expiresInMs = 60 * 60 * 1000, com
 function reset({ nearbyAlerts = true } = {}) {
   fakeRedis.values.clear();
   fakeRedis.sets.clear();
+  fakeRedis.sortedSets.clear();
   fakeRedis.ttls.clear();
   sightings = [];
   users.clear();
+  createdNotifications.length = 0;
   users.set('yo', { _id: 'yo', settings: { nearbyAlerts } });
 }
 
@@ -128,12 +197,13 @@ test('rechaza celdas inválidas o de otra resolución con 400 INVALID_H3_CELL', 
   assert.equal(fakeRedis.values.size, 0);
 });
 
-test('guarda la celda del usuario con TTL de 1 hora y devuelve nearby vacío si no hay nada', async () => {
+test('guarda la celda activa con TTL de 2 minutos y devuelve nearby vacío si no hay nada', async () => {
   reset();
   const result = await locationService.reportLocation('yo', CENTER);
   assert.deepEqual(result, { nearby: [] });
   assert.equal(fakeRedis.values.get('user:cell:yo'), CENTER);
-  assert.equal(fakeRedis.ttls.get('user:cell:yo'), 3600);
+  assert.equal(fakeRedis.ttls.get('user:cell:yo'), 120);
+  assert.deepEqual(await locationService.getUsersInCell(CENTER), ['yo']);
 });
 
 test('usuario inexistente: 404 y no guarda nada', async () => {
@@ -205,6 +275,20 @@ test('dos pedidos en paralelo no avisan dos veces el mismo avistamiento', async 
   assert.equal(a.nearby.length + b.nearby.length, 1);
 });
 
+test('un sighting nuevo crea buzón para usuarios activos sin duplicarlo durante el polling', async () => {
+  reset();
+  await locationService.updateLocation('yo', CENTER);
+  const sighting = addSighting({ h3Index: CENTER, user: 'otro', commonName: 'Zorro' });
+
+  assert.equal(await locationService.notifyUsersAboutSighting(sighting, sighting.species), 1);
+  assert.equal(createdNotifications.length, 1);
+  assert.equal(createdNotifications[0].title, 'Zorro cerca de vos');
+
+  const result = await locationService.reportLocation('yo', CENTER);
+  assert.equal(result.nearby.length, 1);
+  assert.equal(createdNotifications.length, 1);
+});
+
 test('deleteLocation borra la celda y los avisos vistos del usuario', async () => {
   reset();
   addSighting({ h3Index: CENTER });
@@ -241,4 +325,15 @@ test('listNear por h3Index y por lat/lng; k=2 trae más celdas; excluye al usuar
     () => sightingsService.listNear({ h3Index: 'basura' }),
     (err) => err.status === 400 && err.code === 'INVALID_H3_CELL',
   );
+});
+
+test('listInRadius usa el círculo geográfico y excluye avistamientos fuera del radio', async () => {
+  reset();
+  addSighting({ h3Index: CENTER, user: 'otro' });
+  addSighting({ h3Index: RING2, user: 'otro' });
+  const [lat, lng] = h3.cellToLatLng(CENTER);
+
+  const result = await sightingsService.listInRadius({ lat, lng, radiusMeters: 50 });
+  assert.equal(result.length, 1);
+  assert.equal(result[0].h3Index, CENTER);
 });

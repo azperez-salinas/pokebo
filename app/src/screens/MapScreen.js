@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, ImageBackground, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Image, ImageBackground, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 import MapView, { Marker, Polygon } from 'react-native-maps';
 import AuthButton from '../components/AuthButton';
@@ -18,7 +18,6 @@ const USER_DELTA = 0.003;
 const WATCH_DISTANCE_METERS = 5;
 
 const SIGHTINGS_REFRESH_MS = 45000;
-const REGION_DEBOUNCE_MS = 600;
 const SIGHTINGS_RADIUS_METERS = 250;
 
 function elapsedSince(seenAt) {
@@ -65,6 +64,7 @@ export default function MapScreen() {
   const { permission, requestPermission, getCurrentPosition } = useLocation();
   const mapRef = useRef(null);
   const regionRef = useRef(DEFAULT_REGION);
+  const userLocationRef = useRef(null);
   const fetchedCellRef = useRef(null);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState(null);
@@ -88,9 +88,8 @@ export default function MapScreen() {
   const [photoLoading, setPhotoLoading] = useState(false);
   const [photoError, setPhotoError] = useState(null);
 
-  // Control de respuestas antiguas y cambios de región.
+  // Control de respuestas antiguas.
   const mapRequestId = useRef(0);
-  const regionTimerRef = useRef(null);
   const mountedRef = useRef(false);
   const mapFetchingRef = useRef(false);
 
@@ -162,14 +161,20 @@ export default function MapScreen() {
     refreshMapSightings();
 
     // Actualización cada 45 segundos mientras el mapa esté montado.
-    const intervalId = setInterval(() => {
-      refreshMapSightings();
-    }, SIGHTINGS_REFRESH_MS);
+    const refreshIfActive = () => {
+      if (AppState.currentState === 'active') refreshMapSightings();
+    };
+    const intervalId = setInterval(refreshIfActive, SIGHTINGS_REFRESH_MS);
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refreshMapSightings();
+    });
+
 
     return () => {
       mountedRef.current = false;
 
       clearInterval(intervalId);
+      appStateSubscription.remove();
 
       // Invalida cualquier respuesta que todavía esté pendiente.
       mapRequestId.current += 1;
@@ -181,18 +186,24 @@ export default function MapScreen() {
     setError(null);
     try {
       const { lat, lng } = await getCurrentPosition();
+      userLocationRef.current = { latitude: lat, longitude: lng };
       setUserCell(cellOf(lat, lng));
       mapRef.current?.animateToRegion({ latitude: lat, longitude: lng, latitudeDelta: USER_DELTA, longitudeDelta: USER_DELTA }, 600);
+      await refreshMapSightings();
     } catch (cause) {
       setError(cause);
     } finally {
       setLocating(false);
     }
-  }, [getCurrentPosition]);
+  }, [getCurrentPosition, refreshMapSightings]);
 
   // Si el permiso ya estaba dado, se centra solo al abrir. Si no, primero se explica para qué se usa.
   useEffect(() => {
     if (permission?.granted) centerOnUser();
+    else if (permission && !permission.granted) {
+      userLocationRef.current = null;
+      setMapSightings([]);
+    }
   }, [permission?.granted, centerOnUser]);
 
   // Mientras el mapa está abierto, la celda del usuario sigue sus movimientos (sin mover la cámara del mapa).
@@ -203,6 +214,7 @@ export default function MapScreen() {
     Location.watchPositionAsync(
       { accuracy: Location.Accuracy.High, distanceInterval: WATCH_DISTANCE_METERS },
       ({ coords }) => {
+        userLocationRef.current = { latitude: coords.latitude, longitude: coords.longitude };
         setUserCell(cellOf(coords.latitude, coords.longitude));
         setFix((prev) => ({ accuracy: Math.round(coords.accuracy ?? 0), count: (prev?.count ?? 0) + 1 }));
       },
@@ -296,8 +308,8 @@ export default function MapScreen() {
     return cells ? buildOverlay({ cells, userCell, sightings }) : null;
   }, [overlayOn, region, userCell, sightings]);
 
-  // Avistamientos alrededor del centro del mapa (k=2). Se piden de nuevo solo cuando cambia la celda del centro.
-  const centerCell = overlayOn && region ? cellOf(region.latitude, region.longitude) : null;
+  // El overlay de desarrollo también se limita a la ubicación propia, nunca al centro explorado del mapa.
+  const centerCell = overlayOn ? userCell : null;
   useEffect(() => {
     if (!centerCell) {
       fetchedCellRef.current = null;
@@ -536,7 +548,7 @@ const local = StyleSheet.create({
 
   refreshButton: {
     position: 'absolute',
-    top: 16,
+    top: 72,
     right: 16,
     width: 48,
     height: 48,
@@ -563,7 +575,7 @@ const local = StyleSheet.create({
 
   mapErrorBox: {
     position: 'absolute',
-    top: 72,
+    top: 128,
     left: 16,
     right: 16,
     backgroundColor: palette.blanco,

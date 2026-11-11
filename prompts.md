@@ -571,3 +571,13 @@ Lo que se hizo:
 - app/src/store/authStore.js: verifyStoredSession corre al cargar una sesión guardada; llama a getMe y, si responde, actualiza el usuario de la sesión (updateSessionUser), lo que también refresca settings.nearbyAlerts.
 - Verificado con los tests de la app (24, que no cubren este flujo). Sin pruebas en el teléfono.
 ```
+
+## 2026-11-11 — Evaluación previo al despliegue
+
+```text
+Quieor que hagas una evaluacion general de lcómo está hecho el proyecto, y evalues la mejor forma para hacer un despliegue/migracion a AWS.
+
+quiero que aproveches para encontrar inconsistencias y mejoras contrastadas en el diseño de la app, aclarando qué se puede mejorar, por que y de que forma.
+
+algo que ya tenemos en mente es mover todos los secretos a un secret manager único, ya que lo que consideramos la dmz (edge-api), no debe tener secretos importantes si se llega a conquistar
+```

@@ -235,3 +235,20 @@ Todos los archivos `.env` reales están ignorados por Git. Los archivos importan
 Los archivos `.env.example` correspondientes documentan los nombres de las variables y son los únicos que
 se pueden compartir o versionar sin cifrado.
 
+## decisiones pokebo 11/11/26
+
+se implementa notificación push para avistamientos cercanos mientras no se tiene la app en primer plano
+	
+	- Se guarda la última posición conocida del usuario por 5 minutos en Redis
+	- Cuando surge un nuevo avistamiento
+	- si matchea la posición en h3 del avistamiento con la ubicación última conocida del usuario (o algún hexágono vecino), se envía push
+
+El radio de 2dsphere tiene un diámetro equivalente a los 7 hexágonos que componen la ubicación propia y sus vecinos (a definir)
+
+El código de verificación se pide tanto al registrarse como iniciar sesión
+
+al registrarse : evitamos que se creen cuentas solamente con poner un correo
+
+al iniciar sesión: evitamos que alguien pueda ingresar si solamente tiene un user y una contraseña
+
+	de igual forma, cerrar y abrir la app no impacta en un cierre la sesión, por lo que un usuario en un flujo de uso común, no tiene dobles verificaciones constantes

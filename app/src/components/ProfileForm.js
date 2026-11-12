@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import AuthButton from './AuthButton';
 import { palette, fonts } from '../styles';
 import { updateMe } from '../services/users.service';
 
-const AVATARS = ['avatar_1', 'avatar_2', 'avatar_3', 'avatar_4', 'avatar_5', 'avatar_6'];
+import { AVATARS, AVATAR_IMAGES } from '../config/avatars';
 
 export default function ProfileForm({ user, onUserUpdated }) {
   const [original, setOriginal] = useState(user);
@@ -62,9 +62,8 @@ export default function ProfileForm({ user, onUserUpdated }) {
       <View
       style={styles.currentAvatar}
       accessibilityLabel={`Avatar actual: ${original.avatar ?? 'avatar_1'}`}>
-        <Text style={styles.currentAvatarText}>
-        {(original.avatar ?? 'avatar_1').split('_')[1]}
-      </Text>
+        <Image source={AVATAR_IMAGES[original.avatar] ?? AVATAR_IMAGES.avatar_1}
+          style={styles.avatarImage} resizeMode="cover" />
       </View>
       <Text style={styles.body}>Explorador: {original.username}</Text>
       <View style={styles.field}>
@@ -85,7 +84,7 @@ export default function ProfileForm({ user, onUserUpdated }) {
           <Pressable key={item} accessibilityRole="radio" accessibilityLabel={`Avatar ${index + 1}`}
             accessibilityState={{ checked: avatar === item }} disabled={saving} onPress={() => setAvatar(item)}
             style={[styles.avatar, avatar === item && styles.avatarSelected]}>
-            <Text style={styles.avatarText}>{index + 1}</Text>
+            <Image source={AVATAR_IMAGES[item]} style={styles.avatarImage} resizeMode="cover" />
           </Pressable>
         ))}
       </View>
@@ -107,7 +106,7 @@ const styles = StyleSheet.create({
   avatars: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   avatar: { width: 52, height: 52, backgroundColor: palette.linea, borderColor: palette.tinta, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
   avatarSelected: { backgroundColor: palette.cielo, borderColor: palette.azul, borderWidth: 4 },
-  avatarText: { fontFamily: fonts.display, fontSize: 15, color: palette.tinta },
+  avatarImage: { width: '100%', height: '100%' },
   currentAvatar: {
   width: 100,
   height: 100,

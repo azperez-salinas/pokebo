@@ -16,6 +16,8 @@ import {
   HEX_FIT_FACTOR,
   IOS_CAMERA_FOV_DEGREES,
   LOCK_MAP_MOVEMENT,
+  MAP_PADDING,
+  MAP_STYLE,
   RECENTER_ANIMATION_MS,
   RING_FIT_FACTOR,
   RING_K,
@@ -457,6 +459,9 @@ export default function MapScreen({ active = true }) {
         minZoomLevel={Platform.OS === 'android' ? minZoomLevel : undefined}
         cameraZoomRange={Platform.OS === 'ios' ? iosZoomRange : undefined}
         scrollEnabled={!LOCK_MAP_MOVEMENT}
+        customMapStyle={MAP_STYLE}
+        mapPadding={MAP_PADDING}
+        legalLabelInsets={MAP_PADDING}
         rotateEnabled={false}
         pitchEnabled={false}
         onMapReady={() => setMapReady(true)}

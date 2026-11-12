@@ -116,7 +116,6 @@ Al terminar
 Mostrame el árbol de carpetas final (tree o equivalente) y la lista de archivos creados, confirmame que estás parado en sprint/01 con el merge ya hecho, y decime qué falta decidir o que dejaste con TODO explícito.
 ```
 
-
 ## 2026-10-10 — Modelos de MongoDB con Mongoose
 
 ```text
@@ -129,7 +128,6 @@ Definí los esquemas con sus campos, tipos de datos, referencias entre entidades
 Cada modelo debe estar separado en su propio archivo JavaScript y exportarse utilizando mongoose.model().
 ```
 
-
 ## 2026-10-10 — Conexión a MongoDB
 
 ```text
@@ -139,7 +137,6 @@ La URI de conexión debe obtenerse desde la configuración del proyecto mediante
 
 Creá un archivo config/mongo.js que exporte una función asíncrona connectMongo(), encargada de establecer la conexión a la base de datos y de gestionar eventos de conexión y reintentos.
 ```
-
 
 ## 2026-10-10 — Configuración de GridFS
 
@@ -153,7 +150,6 @@ Creá un archivo config/gridfs.js con una función initGridFS() para inicializar
 La inicialización debe realizarse después de que MongoDB se haya conectado correctamente.
 ```
 
-
 ## 2026-10-10 — Conexión a Redis
 
 ```text
@@ -165,7 +161,6 @@ Creá config/redis.js utilizando el paquete redis, con una función asíncrona c
 
 Incluir el manejo de eventos de error y exportá tanto la función de conexión como el cliente.
 ```
-
 
 ## 2026-10-14 — Auth: registro, login y cambio de contraseña
 
@@ -282,7 +277,6 @@ Mostrame:
 4. Cualquier supuesto que hayas tenido que tomar por tu cuenta, para que yo lo revise
 ```
 
-
 ## 2026-10-14 — Fix: refresh stub, serviceAuth duplicado y prueba en Docker
 
 ```text
@@ -313,7 +307,6 @@ Docker Desktop ya está corriendo. Hacé esto en una rama nueva feature/fix-auth
 
 Al final: actualizá prompts.md con una entrada nueva (fecha de hoy, título "Fix: refresh stub, serviceAuth duplicado y prueba en Docker") pegando este prompt completo. Confirmame que quedaste en sprint/01 con todo mergeado, y pegame los resultados reales de cada prueba (a-g) y de los logs, no un resumen de que "todo salió bien" — quiero ver las respuestas HTTP concretas (status code y body) de cada una.
 ```
-
 
 ## 2026-10-14 — Auth: refresh token con rotación
 
@@ -368,7 +361,6 @@ Git:
 
 Al final contame: en qué rama quedaste, el grafo de commits resultante, qué tests corriste y con qué resultado, y cualquier supuesto que hayas tenido que tomar.
 ```
-
 
 ## 2026-10-14 — Auth: recuperación de contraseña por mail
 
@@ -426,7 +418,6 @@ Git:
 
 Al final contame: en qué rama quedaste, el grafo de commits resultante, si el push salió bien, qué tests corriste y con qué resultado, y cualquier supuesto que hayas tenido que tomar (en especial si había usuarios de prueba sin email en la base que rompan la validación required).
 ```
-
 
 ## 2026-10-21 — Backend de la galería de capturas (enciclopedia)
 
@@ -572,6 +563,29 @@ Lo que se hizo:
 - Verificado con los tests de la app (24, que no cubren este flujo). Sin pruebas en el teléfono.
 ```
 
+## 2026-11-11 — Capturas: círculo de carga, fotos en blanco y enciclopedia agrupada
+
+```text
+Resumen de los mensajes y decisiones (capturas de pantalla de la cámara, el resultado de la captura y la colección como referencia):
+
+Pedido (texto original): "encontre varios errores en las implementaciones anteriores. 1. El circulo que marcan esta escondido, debe ir en el medio. 2. despues de sacar la foto, no se muestra ni en el logro. 3. tampoco aparece en la enciclopedia y ademas para un mismo tipo hay dos capturas, y yo habia pedido anteriormente que si son el mismo, no importa cuando haya sido deben ir juntos. corrige todo. no hagas nada sin consultarme". Después, al responder las preguntas: el recuadro rojo y la flecha del primer pantallazo los puso el usuario para mostrar dónde estaba el círculo; lo quiere en el centro de toda la pantalla.
+
+Decisiones dadas:
+- Antes de tocar código se consultó con el usuario (pidió no hacer nada sin consultarle). Se revisó solo en lectura y se propuso un plan.
+- Círculo: en el centro de toda la pantalla, no del marco de las esquinas azules.
+- Fotos en blanco: añadir un diagnóstico temporal que muestre el motivo en pantalla (o un log en Docker), y resolver con lo que mostrara.
+- Enciclopedia: una tarjeta por especie sin importar cuándo se sacó cada captura (los filtros de año y mes siguen aplicando sobre las capturas). Al abrir el detalle de la especie, un carrusel con todas las fotos.
+- "Ser humano" se mantiene como especie capturable (el usuario confirmó que está bien).
+
+Lo que se hizo:
+- app/src/screens/CameraScreen.js: el indicador de carga ocupa toda la pantalla (top/bottom/left/right en 0) y se centra, con un fondo oscuro leve. El usuario confirmó que quedó bien.
+- core-api/src/services/captures.service.js: listByUser agrupa por especie con una agregación (agruparPorEspecie): foto y fecha de la captura más reciente y count. Con speciesId sigue devolviendo todas las capturas de esa especie (limit máx. 50), que usa el carrusel. El total y las páginas cuentan especies. Hubo que reconstruir la imagen de Docker del Core (docker compose up -d --build core-api): reiniciar el contenedor no recoge el código.
+- app/src/components/CaptureTile.js: insignia "xN" cuando la especie tiene más de una captura.
+- app/src/screens/SpeciesDetailScreen.js: PhotoCarousel (FlatList horizontal paginada, contador "1 / N") con las fotos del usuario; si no hay, se muestra la imagen del catálogo.
+- Diagnóstico de las fotos: se comprobó en la base que los archivos de GridFS son JPEG válidos. Con un componente temporal (DebugImage) el texto rojo mostró que fetch recibía 200 image/jpeg, pero el <Image> nativo de Android recibía 401 Unauthorized para la misma URL.
+- app/src/components/AuthImage.js (reemplaza a DebugImage, que se borró): descarga la imagen con fetch y el token, la convierte a data URI con FileReader y la guarda en una caché en memoria (60 entradas). Se usa en la enciclopedia, el resultado de la captura, el carrusel, la imagen de catálogo del detalle y la foto del avistamiento en el mapa (app/src/screens/MapScreen.js). Se desconoce por qué el <Image> nativo pierde la autorización.
+- Verificado: el usuario confirmó que quedó perfecto en el teléfono. No se corrió la suite de tests ni se agregaron tests nuevos para esto.
+```
 ## 2026-11-11 — Evaluación previo al despliegue
 
 ```text

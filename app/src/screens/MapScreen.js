@@ -6,6 +6,7 @@ import AuthButton from '../components/AuthButton';
 import useLocation from '../hooks/useLocation';
 import { getSightings } from '../services/map.service';
 import { getMyCaptures } from '../services/captures.service';
+import AuthImage from '../components/AuthImage';
 import { photoSource } from '../services/images.service';
 import { H3_RESOLUTION, buildOverlay, cellOf, cellsForRegion } from '../utils/h3Overlay';
 import { buttons, colors, fonts, icons, palette } from '../styles';
@@ -493,7 +494,7 @@ export default function MapScreen() {
             {photoLoading ? (
               <ActivityIndicator color={palette.azul} />
             ) : selectedPhoto ? (
-              <Image
+              <AuthImage
                 source={photoSource(selectedPhoto)}
                 style={local.sightingPhoto}
                 resizeMode="cover"

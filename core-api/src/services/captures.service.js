@@ -148,6 +148,46 @@ const toPublicCapture = (capture) => ({
   capturedAt: capture.capturedAt,
 });
 
+// Agrupa las capturas por especie sin importar cuándo se sacaron. Orden: la especie capturada más recientemente primero.
+async function agruparPorEspecie(filtro, page, limit) {
+  const [resultado] = await Capture.aggregate([
+    { $match: filtro },
+    { $sort: { capturedAt: -1 } },
+    {
+      $group: {
+        _id: "$species",
+        photoId: { $first: "$photoId" },
+        capturedAt: { $first: "$capturedAt" },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { capturedAt: -1 } },
+    {
+      $facet: {
+        items: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+        total: [{ $count: "n" }],
+      },
+    },
+  ]);
+
+  const grupos = resultado.items;
+  const especies = await Species.find({ _id: { $in: grupos.map((g) => g._id) } }).select(
+    "commonName scientificName family class",
+  );
+  const porId = new Map(especies.map((e) => [String(e._id), e]));
+
+  const items = grupos.map((grupo) => {
+    const publica = toPublicCapture({
+      _id: grupo._id,
+      photoId: grupo.photoId,
+      species: porId.get(String(grupo._id)),
+      capturedAt: grupo.capturedAt,
+    });
+    return { ...publica, count: grupo.count };
+  });
+  return { items, total: resultado.total[0]?.n ?? 0 };
+}
+
 // Galería del usuario (más recientes primero). Los filtros de familia y clase se resuelven sobre species.
 // El progreso (especies distintas capturadas / especies del catálogo) respeta familia y clase, no las fechas.
 async function listByUser(
@@ -177,19 +217,27 @@ async function listByUser(
   const filtroProgreso = { user };
   if (idsEspecie) filtroProgreso.species = { $in: idsEspecie };
 
-  const [capturas, total, capturadas, totalEspecies] = await Promise.all([
-    Capture.find(filtro)
-      .sort({ capturedAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .populate("species", "commonName scientificName family class"),
-    Capture.countDocuments(filtro),
+  // Con speciesId se listan todas las fotos de esa especie (carrusel de la ficha).
+  // Sin speciesId se agrupa: una entrada por especie, con la foto más reciente y la cantidad de capturas.
+  const listado = speciesId
+    ? Promise.all([
+        Capture.find(filtro)
+          .sort({ capturedAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .populate("species", "commonName scientificName family class"),
+        Capture.countDocuments(filtro),
+      ]).then(([capturas, total]) => ({ items: capturas.map(toPublicCapture), total }))
+    : agruparPorEspecie(filtro, page, limit);
+
+  const [{ items, total }, capturadas, totalEspecies] = await Promise.all([
+    listado,
     Capture.distinct("species", filtroProgreso).then((ids) => ids.length),
     Species.countDocuments(filtroEspecie),
   ]);
 
   return {
-    captures: capturas.map(toPublicCapture),
+    captures: items,
     meta: {
       page,
       limit,

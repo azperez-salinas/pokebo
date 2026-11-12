@@ -13,6 +13,17 @@ export const LOCK_MAP_MOVEMENT = true;
 // a distancia de cámara. Si en un iPhone se ve más o menos zona de la esperada al alejar, ajustar este valor.
 export const IOS_CAMERA_FOV_DEGREES = 30;
 
+// Estilo del mapa base (Google Maps): oculta comercios y otros lugares de interés y el transporte público,
+// para que solo se vean las calles. Para volver a mostrarlos, poner MAP_STYLE = undefined.
+export const MAP_STYLE = [
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+];
+
+// Margen interno del mapa (dp): mueve hacia adentro el logo de Google y la atribución para que no los tapen
+// la barra de pestañas ni los botones. Con margen abajo, el centro del mapa sube la mitad de ese valor.
+export const MAP_PADDING = { top: 0, right: 0, bottom: 12, left: 12 };
+
 // Duración de la animación con la que la cámara sigue al usuario cuando se mueve (ms).
 export const FOLLOW_ANIMATION_MS = 300;
 

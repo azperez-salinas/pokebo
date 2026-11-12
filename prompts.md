@@ -586,6 +586,7 @@ Lo que se hizo:
 - app/src/components/AuthImage.js (reemplaza a DebugImage, que se borró): descarga la imagen con fetch y el token, la convierte a data URI con FileReader y la guarda en una caché en memoria (60 entradas). Se usa en la enciclopedia, el resultado de la captura, el carrusel, la imagen de catálogo del detalle y la foto del avistamiento en el mapa (app/src/screens/MapScreen.js). Se desconoce por qué el <Image> nativo pierde la autorización.
 - Verificado: el usuario confirmó que quedó perfecto en el teléfono. No se corrió la suite de tests ni se agregaron tests nuevos para esto.
 ```
+
 ## 2026-11-11 — Evaluación previo al despliegue
 
 ```text
@@ -619,4 +620,23 @@ Lo que se hizo:
 - app/src/screens/MapScreen.js: el mapa no se crea hasta conocer el tamaño de la pantalla y la ubicación, y arranca directo encuadrando el hexágono del usuario (sin Montevideo ni animación). Sin permiso o sin GPS usa la región por defecto y, si se concede el permiso, se centra solo. minZoomLevel sale de la zona; setMapBoundaries limita la cámara a la zona; scrollEnabled=false, rotateEnabled=false y pitchEnabled=false con LOCK_MAP_MOVEMENT; la cámara sigue al usuario con animateCamera. Los avistamientos se piden por celda (h3Index + k=RING_K) en vez de lat/lng con 250 m. Con la pantalla oculta (active=false) se pausan el GPS y los refrescos.
 - app/src/navigation/index.js: MapScreen se mantiene montada y se oculta con display: none al cambiar de pestaña o abrir el buzón.
 - Verificado con los tests de la app (32) y el parseo de los archivos tocados; el usuario confirmó en el teléfono que quedó perfecto. iOS: a pedido del usuario ("tiene que funcionar en iOS" y "tiene que ser igual que en Android") el límite también se definió para iPhone, sin probarlo en un iPhone: cameraZoomRange limita el alejamiento máximo (distancia de cámara calculada con la nueva constante IOS_CAMERA_FOV_DEGREES = 30, a ajustar probando) y, con LOCK_MAP_MOVEMENT en false, onRegionChange devuelve la cámara al borde de la zona apenas el centro sale (equivalente a setMapBoundaries de Android). utils/mapView.js suma cameraDistanceForLongitudeSpan y clampToBounds (tests: 34 en total). En iOS ya no se usa minZoomLevel (obsoleto en Apple Maps). El panel H3 de desarrollo ahora usa RING_K. Los cambios no están commiteados.
+```
+
+## 2026-11-11 — Mapa: marca de agua de Google y comercios ocultos
+
+```text
+Resumen de los mensajes y decisiones (app/src/screens/MapScreen.js y app/src/config/map.js como referencia):
+
+Pedido (texto original): "se puede eliminar la marca de agua de Google del mapa?". Después: "provemos eso del padding, si no me gusta te pido deshacerlo, además, se pueden ocultar los comercios? que solo se vean las calles?".
+
+Decisiones dadas:
+- La marca de agua no se elimina: los términos de uso de Google Maps exigen mantener el logo y la atribución, y quitarlos puede llevar a que bloqueen la clave de API. Se evaluó cambiar de proveedor (OpenStreetMap con UrlTile o MapLibre), pero también exige atribución y afectaría marcadores, polígonos y los límites de zoom y movimiento, así que no se hizo.
+- Se probó correr el logo con un margen interno del mapa; el usuario puede pedir deshacerlo.
+- Comercios y otros lugares de interés ocultos: solo se ven las calles y sus nombres.
+
+Lo que se hizo:
+- app/src/config/map.js: MAP_STYLE (estilo de Google que oculta poi y transit; para volver a mostrarlos, MAP_STYLE = undefined) y MAP_PADDING ({ top: 0, right: 0, bottom: 12, left: 12 }; en ceros se deshace).
+- app/src/screens/MapScreen.js: el MapView recibe customMapStyle={MAP_STYLE}, mapPadding={MAP_PADDING} (Android y iOS) y legalLabelInsets={MAP_PADDING} (Apple Maps). showsPointsOfInterest={false} ya estaba, pero Google en Android lo ignora, por eso seguían apareciendo comercios.
+- Verificado con los tests de la app (34) y el parseo de los archivos; sin pruebas en el teléfono. El margen de abajo sube el centro del mapa unos 6 dp.
+- Pendiente: en iPhone el mapa no define proveedor y usa Apple Maps, donde customMapStyle no aplica (solo con Google Maps), así que ahí seguirían los comercios. Unificarlo requiere fijar Google como proveedor en iOS y configurar la clave de API para iPhone
 ```

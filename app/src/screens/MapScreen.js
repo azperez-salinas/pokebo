@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, Image, ImageBackground, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Image, ImageBackground, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 import MapView, { Marker, Polygon } from 'react-native-maps';
 import AuthButton from '../components/AuthButton';
@@ -9,17 +9,20 @@ import { getMyCaptures } from '../services/captures.service';
 import AuthImage from '../components/AuthImage';
 import { photoSource } from '../services/images.service';
 import { H3_RESOLUTION, buildOverlay, cellOf, cellsForRegion } from '../utils/h3Overlay';
+import { boundsOf, cameraDistanceForLongitudeSpan, clampToBounds, regionFitting, ringOf, zoomForLongitudeSpan } from '../utils/mapView';
+import {
+  FALLBACK_REGION,
+  FOLLOW_ANIMATION_MS,
+  HEX_FIT_FACTOR,
+  IOS_CAMERA_FOV_DEGREES,
+  LOCK_MAP_MOVEMENT,
+  RECENTER_ANIMATION_MS,
+  RING_FIT_FACTOR,
+  RING_K,
+  SIGHTINGS_REFRESH_MS,
+  WATCH_DISTANCE_METERS,
+} from '../config/map';
 import { buttons, colors, fonts, icons, palette } from '../styles';
-
-// Sin ubicación, el mapa arranca en Montevideo
-const DEFAULT_REGION = { latitude: -34.9011, longitude: -56.1645, latitudeDelta: 0.08, longitudeDelta: 0.08 };
-// ~330 m de alto: con celdas de ~28 m el overlay solo dibuja si el mapa está así de cerca
-const USER_DELTA = 0.003;
-// Cada cuántos metros se recalcula la celda del usuario con el mapa abierto (las celdas miden ~28 m)
-const WATCH_DISTANCE_METERS = 5;
-
-const SIGHTINGS_REFRESH_MS = 45000;
-const SIGHTINGS_RADIUS_METERS = 250;
 
 function elapsedSince(seenAt) {
   const timestamp = new Date(seenAt).getTime();
@@ -61,16 +64,27 @@ function hexStyle(hex) {
 
 // Mapa base centrado en el usuario. Solo en desarrollo (__DEV__) hay un botón "H3" que dibuja los hexágonos del
 // sistema: tu celda, sus vecinas y las celdas con avistamientos (GET /map/sightings).
-export default function MapScreen() {
+// La navegación mantiene esta pantalla montada al cambiar de pestaña (active=false solo la oculta), así el mapa
+// conserva su cámara, zoom y ubicación sin recargarse. Con active=false se pausan el GPS y los refrescos.
+export default function MapScreen({ active = true }) {
   const { permission, requestPermission, getCurrentPosition } = useLocation();
   const mapRef = useRef(null);
-  const regionRef = useRef(DEFAULT_REGION);
+  const regionRef = useRef(FALLBACK_REGION);
   const userLocationRef = useRef(null);
   const fetchedCellRef = useRef(null);
+  const userCellRef = useRef(null);
+  const usedFallbackRef = useRef(false); // el mapa arrancó en la región por defecto (sin permiso o sin GPS)
+  const locatingInitialRef = useRef(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState(null);
 
-  // Overlay H3 (solo desarrollo)
+  // Encuadre: el mapa se crea recién cuando se conoce el tamaño de la pantalla y la ubicación inicial,
+  // así arranca directo en el hexágono del usuario (sin pasar por otra región ni animar el acercamiento).
+  const [layout, setLayout] = useState(null); // { width, height } en dp
+  const [initialRegion, setInitialRegion] = useState(null);
+  const [mapReady, setMapReady] = useState(false);
+
+  // Hexágono del usuario (y overlay H3 de desarrollo)
   const [userCell, setUserCell] = useState(null);
   const [fix, setFix] = useState(null); // última lectura del GPS (solo para el panel de desarrollo)
   const [showHexes, setShowHexes] = useState(false);
@@ -106,18 +120,18 @@ export default function MapScreen() {
     setMapError(null);
 
     try {
-      // Obtener la posición GPS real, nunca el centro del mapa.
-      const { lat, lng } = await getCurrentPosition();
+      // Hexágono real del usuario (GPS), nunca el centro del mapa. El alcance es su hexágono + RING_K anillos.
+      let cell = userCellRef.current;
+      if (!cell) {
+        const { lat, lng } = await getCurrentPosition();
+        cell = cellOf(lat, lng);
+      }
 
       if (!mountedRef.current || requestId !== mapRequestId.current) {
         return;
       }
 
-      const list = await getSightings({
-        lat,
-        lng,
-        radiusMeters: SIGHTINGS_RADIUS_METERS,
-      });
+      const list = await getSightings({ h3Index: cell, k: RING_K });
 
       if (!mountedRef.current || requestId !== mapRequestId.current) {
         return;
@@ -150,18 +164,17 @@ export default function MapScreen() {
 
   useEffect(() => {
     mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
-    if (!permission?.granted) {
-      return () => {
-        mountedRef.current = false;
-        mapRequestId.current += 1;
-      };
-    }
+  // Avistamientos: consulta al activarse y cada SIGHTINGS_REFRESH_MS mientras el mapa está a la vista.
+  useEffect(() => {
+    if (!permission?.granted || !active) return undefined;
 
-    // Consulta inicial con ubicación disponible.
     refreshMapSightings();
 
-    // Actualización cada 45 segundos mientras el mapa esté montado.
     const refreshIfActive = () => {
       if (AppState.currentState === 'active') refreshMapSightings();
     };
@@ -170,53 +183,94 @@ export default function MapScreen() {
       if (state === 'active') refreshMapSightings();
     });
 
-
     return () => {
-      mountedRef.current = false;
-
       clearInterval(intervalId);
       appStateSubscription.remove();
 
       // Invalida cualquier respuesta que todavía esté pendiente.
       mapRequestId.current += 1;
     };
-  }, [permission?.granted, refreshMapSightings]);
+  }, [permission?.granted, active, refreshMapSightings]);
+
+  // Guarda la posición del usuario y su hexágono. Devuelve el punto.
+  const applyPosition = useCallback((lat, lng) => {
+    const point = { latitude: lat, longitude: lng };
+    userLocationRef.current = point;
+    userCellRef.current = cellOf(lat, lng);
+    setUserCell(userCellRef.current);
+    return point;
+  }, []);
+
+  // Región que muestra el hexágono del usuario completo, centrada en su ubicación
+  const hexRegion = useCallback((point, size) => {
+    const bounds = boundsOf([cellOf(point.latitude, point.longitude)]);
+    return regionFitting(bounds, point, size.height / size.width, HEX_FIT_FACTOR);
+  }, []);
 
   const centerOnUser = useCallback(async () => {
     setLocating(true);
     setError(null);
     try {
       const { lat, lng } = await getCurrentPosition();
-      userLocationRef.current = { latitude: lat, longitude: lng };
-      setUserCell(cellOf(lat, lng));
-      mapRef.current?.animateToRegion({ latitude: lat, longitude: lng, latitudeDelta: USER_DELTA, longitudeDelta: USER_DELTA }, 600);
+      const point = applyPosition(lat, lng);
+      if (layout) mapRef.current?.animateToRegion(hexRegion(point, layout), RECENTER_ANIMATION_MS);
       await refreshMapSightings();
     } catch (cause) {
       setError(cause);
     } finally {
       setLocating(false);
     }
-  }, [getCurrentPosition, refreshMapSightings]);
+  }, [getCurrentPosition, applyPosition, hexRegion, layout, refreshMapSightings]);
 
-  // Si el permiso ya estaba dado, se centra solo al abrir. Si no, primero se explica para qué se usa.
+  // Encuadre inicial: con permiso, directo en el hexágono del usuario; sin permiso (o sin GPS), en la región por defecto.
+  // Si el permiso se concede después, se centra en el usuario.
   useEffect(() => {
-    if (permission?.granted) centerOnUser();
-    else if (permission && !permission.granted) {
+    if (!layout || !permission) return;
+
+    if (!permission.granted) {
+      userCellRef.current = null;
       userLocationRef.current = null;
+      setUserCell(null);
       setMapSightings([]);
+      if (!initialRegion) {
+        usedFallbackRef.current = true;
+        setInitialRegion(FALLBACK_REGION);
+      }
+      return;
     }
-  }, [permission?.granted, centerOnUser]);
 
-  // Mientras el mapa está abierto, la celda del usuario sigue sus movimientos (sin mover la cámara del mapa).
+    if (initialRegion) {
+      if (usedFallbackRef.current) {
+        usedFallbackRef.current = false;
+        centerOnUser();
+      }
+      return;
+    }
+    if (locatingInitialRef.current) return;
+    locatingInitialRef.current = true;
+    getCurrentPosition()
+      .then(({ lat, lng }) => setInitialRegion(hexRegion(applyPosition(lat, lng), layout)))
+      .catch((cause) => {
+        usedFallbackRef.current = true;
+        setError(cause);
+        setInitialRegion(FALLBACK_REGION);
+      })
+      .finally(() => {
+        locatingInitialRef.current = false;
+      });
+  }, [layout, permission, initialRegion, getCurrentPosition, applyPosition, hexRegion, centerOnUser]);
+
+  // Mientras el mapa está a la vista, el hexágono del usuario sigue sus movimientos (sin mover la cámara del mapa).
   useEffect(() => {
-    if (!permission?.granted) return undefined;
+    if (!permission?.granted || !active) return undefined;
     let subscription = null;
     let cancelled = false;
     Location.watchPositionAsync(
       { accuracy: Location.Accuracy.High, distanceInterval: WATCH_DISTANCE_METERS },
       ({ coords }) => {
-        userLocationRef.current = { latitude: coords.latitude, longitude: coords.longitude };
-        setUserCell(cellOf(coords.latitude, coords.longitude));
+        const point = applyPosition(coords.latitude, coords.longitude);
+        // Con el mapa bloqueado, la cámara acompaña al usuario (mantiene el zoom)
+        if (LOCK_MAP_MOVEMENT) mapRef.current?.animateCamera({ center: point }, { duration: FOLLOW_ANIMATION_MS });
         setFix((prev) => ({ accuracy: Math.round(coords.accuracy ?? 0), count: (prev?.count ?? 0) + 1 }));
       },
     )
@@ -229,7 +283,45 @@ export default function MapScreen() {
       cancelled = true;
       subscription?.remove();
     };
-  }, [permission?.granted]);
+  }, [permission?.granted, active, applyPosition]);
+
+  // Zona permitida: hexágono del usuario + vecinos. Sigue al usuario si cambia de hexágono.
+  const zone = useMemo(() => {
+    if (!userCell) return null;
+    const cells = ringOf(userCell, RING_K);
+    const bounds = boundsOf(cells);
+    return { bounds };
+  }, [userCell]);
+
+  // Alejamiento máximo: la zona permitida ocupa el ancho de la pantalla
+  const minZoomLevel = zone && layout
+    ? zoomForLongitudeSpan((zone.bounds.east - zone.bounds.west) * RING_FIT_FACTOR, layout.width)
+    : undefined;
+
+  // iOS (Apple Maps): el alejamiento máximo se define como distancia de cámara en metros
+  const iosZoomRange = zone && layout
+    ? {
+        maxCenterCoordinateDistance: cameraDistanceForLongitudeSpan(
+          (zone.bounds.east - zone.bounds.west) * RING_FIT_FACTOR,
+          (zone.bounds.north + zone.bounds.south) / 2,
+          layout.height / layout.width,
+          IOS_CAMERA_FOV_DEGREES,
+        ),
+      }
+    : undefined;
+
+  // Desplazamiento máximo: la cámara no sale de la zona permitida (Android: setMapBoundaries)
+  useEffect(() => {
+    if (!zone || !mapReady) return;
+    try {
+      mapRef.current?.setMapBoundaries(
+        { latitude: zone.bounds.north, longitude: zone.bounds.east },
+        { latitude: zone.bounds.south, longitude: zone.bounds.west },
+      );
+    } catch {
+      // iOS no tiene setMapBoundaries: ahí el límite lo aplica handleRegionChanging
+    }
+  }, [zone, mapReady]);
 
   async function enableLocation() {
     if (permission && !permission.canAskAgain) return Linking.openSettings();
@@ -245,6 +337,16 @@ export default function MapScreen() {
       setRegion(next);
     }
   }, [showHexes]);
+
+  // iOS: mientras el usuario arrastra, si el centro sale de la zona se lo devuelve al borde (igual que setMapBoundaries)
+  const handleRegionChanging = useCallback((next) => {
+    if (Platform.OS !== 'ios' || LOCK_MAP_MOVEMENT || !zone) return;
+    const center = { latitude: next.latitude, longitude: next.longitude };
+    const clamped = clampToBounds(center, zone.bounds);
+    if (clamped.latitude !== center.latitude || clamped.longitude !== center.longitude) {
+      mapRef.current?.setCamera({ center: clamped });
+    }
+  }, [zone]);
 
   useEffect(() => {
     if (!selectedSighting) {
@@ -319,7 +421,7 @@ export default function MapScreen() {
     if (fetchedCellRef.current === centerCell) return undefined;
     fetchedCellRef.current = centerCell;
     let cancelled = false;
-    getSightings({ h3Index: centerCell, k: 2 })
+    getSightings({ h3Index: centerCell, k: RING_K })
       .then((list) => {
         if (cancelled) return;
         setSightings(list);
@@ -339,15 +441,30 @@ export default function MapScreen() {
   const needsPermission = permission && !granted;
 
   return (
-    <View style={local.container}>
+    <View
+      style={local.container}
+      onLayout={({ nativeEvent: { layout: size } }) => {
+        if (size.width > 0 && size.height > 0) {
+          setLayout((current) => (current && current.width === size.width && current.height === size.height ? current : { width: size.width, height: size.height }));
+        }
+      }}
+    >
+      {initialRegion ? (
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
-        initialRegion={DEFAULT_REGION}
+        initialRegion={initialRegion}
+        minZoomLevel={Platform.OS === 'android' ? minZoomLevel : undefined}
+        cameraZoomRange={Platform.OS === 'ios' ? iosZoomRange : undefined}
+        scrollEnabled={!LOCK_MAP_MOVEMENT}
+        rotateEnabled={false}
+        pitchEnabled={false}
+        onMapReady={() => setMapReady(true)}
         showsUserLocation={granted}
         showsMyLocationButton={false}
         showsPointsOfInterest={false}
         toolbarEnabled={false}
+        onRegionChange={handleRegionChanging}
         onRegionChangeComplete={handleRegionChange}
         accessibilityLabel="Mapa"
       >
@@ -375,6 +492,11 @@ export default function MapScreen() {
           </Marker>
         ))}
       </MapView>
+      ) : (
+        <View style={local.mapLoading} pointerEvents="none">
+          <ActivityIndicator accessibilityLabel="Cargando mapa" color={palette.azul} />
+        </View>
+      )}
 
       <Pressable
         accessibilityRole="button"
@@ -525,6 +647,7 @@ export default function MapScreen() {
 
 const local = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.fondo },
+  mapLoading: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
   card: {
     position: 'absolute', top: 16, left: 16, right: 16, padding: 16, gap: 12,
     backgroundColor: palette.fondo, borderWidth: 3, borderColor: palette.tinta, borderRadius: 4,

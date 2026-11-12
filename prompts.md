@@ -586,3 +586,12 @@ Lo que se hizo:
 - app/src/components/AuthImage.js (reemplaza a DebugImage, que se borró): descarga la imagen con fetch y el token, la convierte a data URI con FileReader y la guarda en una caché en memoria (60 entradas). Se usa en la enciclopedia, el resultado de la captura, el carrusel, la imagen de catálogo del detalle y la foto del avistamiento en el mapa (app/src/screens/MapScreen.js). Se desconoce por qué el <Image> nativo pierde la autorización.
 - Verificado: el usuario confirmó que quedó perfecto en el teléfono. No se corrió la suite de tests ni se agregaron tests nuevos para esto.
 ```
+## 2026-11-11 — Evaluación previo al despliegue
+
+```text
+Quieor que hagas una evaluacion general de lcómo está hecho el proyecto, y evalues la mejor forma para hacer un despliegue/migracion a AWS.
+
+quiero que aproveches para encontrar inconsistencias y mejoras contrastadas en el diseño de la app, aclarando qué se puede mejorar, por que y de que forma.
+
+algo que ya tenemos en mente es mover todos los secretos a un secret manager único, ya que lo que consideramos la dmz (edge-api), no debe tener secretos importantes si se llega a conquistar
+```

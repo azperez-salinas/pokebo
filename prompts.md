@@ -595,3 +595,28 @@ quiero que aproveches para encontrar inconsistencias y mejoras contrastadas en e
 
 algo que ya tenemos en mente es mover todos los secretos a un secret manager único, ya que lo que consideramos la dmz (edge-api), no debe tener secretos importantes si se llega a conquistar
 ```
+
+## 2026-11-11 — Mapa: vista inicial en el hexágono, límites de zoom y movimiento, mapa siempre montado
+
+```text
+Resumen de los mensajes y decisiones (app/src/screens/MapScreen.js y app/src/utils/h3Overlay.js como referencia):
+
+Pedido (texto original): "Corrección en MapScreen.js (mapa de hexágonos). 1. Vista inicial: al abrir el mapa, la vista debe mostrar solo la porción de terreno que corresponde al hexágono actual del usuario (el área en m² definida para un hexágono), centrada en su ubicación. 2. Límite de alejamiento: el usuario puede alejar el zoom, pero solo hasta mostrar su hexágono más los hexágonos vecinos, que son los únicos que muestran información. 3. Conservar el estado del mapa: hoy, cada vez que se monta MapScreen.js el mapa se recarga desde cero y recién después hace zoom a la ubicación del usuario. Hay que guardar el estado del mapa (región/cámara, zoom y ubicación) al salir de la pantalla, y restaurarlo al volver, para evitar la recarga y el salto de zoom." Criterios de aceptación: al abrir el mapa por primera vez se ve el hexágono del usuario y nada más; no se puede alejar más allá del hexágono y sus vecinos; al salir de MapScreen y volver, el mapa aparece directamente en el estado en que quedó, sin recarga ni animación de acercamiento. "Importante: no tomes ninguna decisión por tu cuenta. Antes de implementar, consultame cualquier punto ambiguo o que tenga más de una alternativa."
+Pedidos posteriores: "podemos hacer que el radio sea 100 m y que ese sea límite de vista? pero que te bloquee moverte, no quiero que solo bloquee el zoom hasta ver los hexágonos vecinos"; "elimina eso blanco que oculta lo que está más allá de los hexágonos"; y cómo traer sprint/03 a la rama sin commitear (se usó git stash).
+
+Decisiones dadas:
+- Encuadre inicial: encuadrar el hexágono y ocultar lo de afuera, pero sin dibujar el contorno del hexágono (eso ya lo hace el botón H3). Más tarde se pidió quitar la capa que ocultaba lo de afuera: la máscara se eliminó.
+- Límites: zoom y desplazamiento limitados a la zona (hexágono + vecinos); la zona sigue al usuario si cambia de hexágono.
+- Estado del mapa: mantener MapScreen montada (solo se oculta al cambiar de pestaña) en vez de guardar y restaurar la región.
+- Avistamientos: el alcance pasa a ser el de la zona (hexágono + vecinos) en vez de los 250 m, y los parámetros quedan configurables en un archivo de config del mapa.
+- Radio de ~100 m: hexágonos con k=2 (RING_K = 2), no un círculo exacto ni un cambio en el backend.
+- Movimiento: mapa fijo en la ubicación del usuario, solo zoom (la cámara sigue sus pasos).
+- No se quiso commitear: los cambios se guardaron con git stash, se actualizó sprint/03 y se trajo a la rama con git merge; el stash pop terminó sin conflictos.
+
+Lo que se hizo:
+- app/src/config/map.js (nuevo): parámetros del mapa. RING_K (2), LOCK_MAP_MOVEMENT (true), FOLLOW_ANIMATION_MS, HEX_FIT_FACTOR (1,05), RING_FIT_FACTOR (1), SIGHTINGS_REFRESH_MS, WATCH_DISTANCE_METERS, RECENTER_ANIMATION_MS y FALLBACK_REGION. La resolución H3 sigue en utils/h3.js porque tiene que coincidir con la del Core.
+- app/src/utils/mapView.js (nuevo): ringOf, boundsOf, regionFitting (región que encuadra el hexágono, con corrección por cos(latitud) y la proporción de la pantalla) y zoomForLongitudeSpan. app/test/mapView.test.js (nuevo): 3 tests.
+- app/src/screens/MapScreen.js: el mapa no se crea hasta conocer el tamaño de la pantalla y la ubicación, y arranca directo encuadrando el hexágono del usuario (sin Montevideo ni animación). Sin permiso o sin GPS usa la región por defecto y, si se concede el permiso, se centra solo. minZoomLevel sale de la zona; setMapBoundaries limita la cámara a la zona; scrollEnabled=false, rotateEnabled=false y pitchEnabled=false con LOCK_MAP_MOVEMENT; la cámara sigue al usuario con animateCamera. Los avistamientos se piden por celda (h3Index + k=RING_K) en vez de lat/lng con 250 m. Con la pantalla oculta (active=false) se pausan el GPS y los refrescos.
+- app/src/navigation/index.js: MapScreen se mantiene montada y se oculta con display: none al cambiar de pestaña o abrir el buzón.
+- Verificado con los tests de la app (32) y el parseo de los archivos tocados; el usuario confirmó en el teléfono que quedó perfecto. iOS: a pedido del usuario ("tiene que funcionar en iOS" y "tiene que ser igual que en Android") el límite también se definió para iPhone, sin probarlo en un iPhone: cameraZoomRange limita el alejamiento máximo (distancia de cámara calculada con la nueva constante IOS_CAMERA_FOV_DEGREES = 30, a ajustar probando) y, con LOCK_MAP_MOVEMENT en false, onRegionChange devuelve la cámara al borde de la zona apenas el centro sale (equivalente a setMapBoundaries de Android). utils/mapView.js suma cameraDistanceForLongitudeSpan y clampToBounds (tests: 34 en total). En iOS ya no se usa minZoomLevel (obsoleto en Apple Maps). El panel H3 de desarrollo ahora usa RING_K. Los cambios no están commiteados.
+```

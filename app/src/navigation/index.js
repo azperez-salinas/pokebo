@@ -25,6 +25,8 @@ export default function MainNavigation({ session, onUserUpdated, onLogout }) {
   const [activeTab, setActiveTab] = useState('map');
   const [inboxOpen, setInboxOpen] = useState(false); // buzón de avisos encima de la pestaña actual
   const { Screen } = tabs.find((tab) => tab.id === activeTab);
+  // El mapa se mantiene montado (solo se oculta) para conservar su cámara, zoom y ubicación al volver a la pestaña
+  const mapVisible = activeTab === 'map' && !inboxOpen;
 
   const goToTab = (id) => {
     setInboxOpen(false);
@@ -34,11 +36,16 @@ export default function MainNavigation({ session, onUserUpdated, onLogout }) {
   return (
     <NotificationsProvider>
       <SafeAreaView style={styles.screen}>
+        <View style={mapVisible ? local.mapShown : local.mapHidden}>
+          <MapScreen active={mapVisible} />
+        </View>
         {inboxOpen ? (
           <NotificationsScreen onBack={() => setInboxOpen(false)} onNavigate={goToTab} />
         ) : (
           <>
-            <Screen session={session} onUserUpdated={onUserUpdated} onLogout={onLogout} onNavigate={goToTab} />
+            {activeTab !== 'map' ? (
+              <Screen session={session} onUserUpdated={onUserUpdated} onLogout={onLogout} onNavigate={goToTab} />
+            ) : null}
             <View pointerEvents="box-none" style={local.bell}>
               <NotificationBell onPress={() => setInboxOpen(true)} />
             </View>
@@ -76,4 +83,6 @@ export default function MainNavigation({ session, onUserUpdated, onLogout }) {
 
 const local = StyleSheet.create({
   bell: { position: 'absolute', top: 12, right: 16 },
+  mapShown: { flex: 1 },
+  mapHidden: { display: 'none' },
 });

@@ -595,3 +595,22 @@ quiero que aproveches para encontrar inconsistencias y mejoras contrastadas en e
 
 algo que ya tenemos en mente es mover todos los secretos a un secret manager único, ya que lo que consideramos la dmz (edge-api), no debe tener secretos importantes si se llega a conquistar
 ```
+
+## 2026-11-12 — Avatares con imágenes en el perfil
+
+```text
+Resumen de los mensajes y decisiones:
+
+Pedido (texto original): "de que tamaños deberian ser las imagenes de los avatars?", luego "tengo las imagenes, como hago para sustituirlos con los numero actuales?" y "queda al rededor de la imagen unas columnas lilas, eso es el fondo? porque no hace fill dentro del cuadro?".
+
+Decisiones dadas:
+- Los avatares siguen siendo predefinidos (avatar_1 a avatar_6, el backend solo guarda el código); la imagen se resuelve en la app.
+- Tamaño recomendado: 300x300 px, cuadradas, PNG (el cuadro más grande es de 100 dp y las pantallas llegan a 3x; 256x256 como alternativa liviana, 512x512 si algún día se muestran más grandes).
+- Las imágenes quedan en app/assets/avatars/ con el nombre del código.
+
+Lo que se hizo:
+- app/src/config/avatars.js (nuevo): AVATAR_IMAGES, mapa explícito código -> require() (Metro exige rutas estáticas) y AVATARS derivado de él.
+- app/src/components/ProfileForm.js: el avatar actual (100 dp) y los 6 botones del selector (52 dp) muestran un Image en lugar del número; si el código no está en el mapa se usa avatar_1.
+- Franjas lilas a los costados: era el fondo del contenedor visible porque resizeMode="contain" deja bandas si la imagen no es exactamente cuadrada. Se cambió a resizeMode="cover".
+- Verificado: sin pruebas en el teléfono tras el cambio a cover, y sin correr los tests de la app.
+```

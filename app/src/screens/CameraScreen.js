@@ -146,7 +146,7 @@ const local = StyleSheet.create({
   bottomLeft: { bottom: 0, left: 0, borderBottomWidth: 6, borderLeftWidth: 6 },
   bottomRight: { bottom: 0, right: 0, borderBottomWidth: 6, borderRightWidth: 6 },
   frameText: { position: 'absolute', bottom: '22%', left: 0, right: 0, textAlign: 'center', fontFamily: fonts.body, fontSize: 24, color: palette.blanco, textShadowColor: palette.tinta, textShadowRadius: 4 },
-  loader: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  loader: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.25)' },
   controls: { position: 'absolute', bottom: 24, left: 24, right: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   actions: { width: '100%', marginTop: 32 },
 });

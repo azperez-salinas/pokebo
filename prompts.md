@@ -116,7 +116,6 @@ Al terminar
 Mostrame el árbol de carpetas final (tree o equivalente) y la lista de archivos creados, confirmame que estás parado en sprint/01 con el merge ya hecho, y decime qué falta decidir o que dejaste con TODO explícito.
 ```
 
-
 ## 2026-10-10 — Modelos de MongoDB con Mongoose
 
 ```text
@@ -129,7 +128,6 @@ Definí los esquemas con sus campos, tipos de datos, referencias entre entidades
 Cada modelo debe estar separado en su propio archivo JavaScript y exportarse utilizando mongoose.model().
 ```
 
-
 ## 2026-10-10 — Conexión a MongoDB
 
 ```text
@@ -139,7 +137,6 @@ La URI de conexión debe obtenerse desde la configuración del proyecto mediante
 
 Creá un archivo config/mongo.js que exporte una función asíncrona connectMongo(), encargada de establecer la conexión a la base de datos y de gestionar eventos de conexión y reintentos.
 ```
-
 
 ## 2026-10-10 — Configuración de GridFS
 
@@ -153,7 +150,6 @@ Creá un archivo config/gridfs.js con una función initGridFS() para inicializar
 La inicialización debe realizarse después de que MongoDB se haya conectado correctamente.
 ```
 
-
 ## 2026-10-10 — Conexión a Redis
 
 ```text
@@ -165,7 +161,6 @@ Creá config/redis.js utilizando el paquete redis, con una función asíncrona c
 
 Incluir el manejo de eventos de error y exportá tanto la función de conexión como el cliente.
 ```
-
 
 ## 2026-10-14 — Auth: registro, login y cambio de contraseña
 
@@ -282,7 +277,6 @@ Mostrame:
 4. Cualquier supuesto que hayas tenido que tomar por tu cuenta, para que yo lo revise
 ```
 
-
 ## 2026-10-14 — Fix: refresh stub, serviceAuth duplicado y prueba en Docker
 
 ```text
@@ -313,7 +307,6 @@ Docker Desktop ya está corriendo. Hacé esto en una rama nueva feature/fix-auth
 
 Al final: actualizá prompts.md con una entrada nueva (fecha de hoy, título "Fix: refresh stub, serviceAuth duplicado y prueba en Docker") pegando este prompt completo. Confirmame que quedaste en sprint/01 con todo mergeado, y pegame los resultados reales de cada prueba (a-g) y de los logs, no un resumen de que "todo salió bien" — quiero ver las respuestas HTTP concretas (status code y body) de cada una.
 ```
-
 
 ## 2026-10-14 — Auth: refresh token con rotación
 
@@ -368,7 +361,6 @@ Git:
 
 Al final contame: en qué rama quedaste, el grafo de commits resultante, qué tests corriste y con qué resultado, y cualquier supuesto que hayas tenido que tomar.
 ```
-
 
 ## 2026-10-14 — Auth: recuperación de contraseña por mail
 
@@ -426,7 +418,6 @@ Git:
 
 Al final contame: en qué rama quedaste, el grafo de commits resultante, si el push salió bien, qué tests corriste y con qué resultado, y cualquier supuesto que hayas tenido que tomar (en especial si había usuarios de prueba sin email en la base que rompan la validación required).
 ```
-
 
 ## 2026-10-21 — Backend de la galería de capturas (enciclopedia)
 
@@ -572,6 +563,30 @@ Lo que se hizo:
 - Verificado con los tests de la app (24, que no cubren este flujo). Sin pruebas en el teléfono.
 ```
 
+## 2026-11-11 — Capturas: círculo de carga, fotos en blanco y enciclopedia agrupada
+
+```text
+Resumen de los mensajes y decisiones (capturas de pantalla de la cámara, el resultado de la captura y la colección como referencia):
+
+Pedido (texto original): "encontre varios errores en las implementaciones anteriores. 1. El circulo que marcan esta escondido, debe ir en el medio. 2. despues de sacar la foto, no se muestra ni en el logro. 3. tampoco aparece en la enciclopedia y ademas para un mismo tipo hay dos capturas, y yo habia pedido anteriormente que si son el mismo, no importa cuando haya sido deben ir juntos. corrige todo. no hagas nada sin consultarme". Después, al responder las preguntas: el recuadro rojo y la flecha del primer pantallazo los puso el usuario para mostrar dónde estaba el círculo; lo quiere en el centro de toda la pantalla.
+
+Decisiones dadas:
+- Antes de tocar código se consultó con el usuario (pidió no hacer nada sin consultarle). Se revisó solo en lectura y se propuso un plan.
+- Círculo: en el centro de toda la pantalla, no del marco de las esquinas azules.
+- Fotos en blanco: añadir un diagnóstico temporal que muestre el motivo en pantalla (o un log en Docker), y resolver con lo que mostrara.
+- Enciclopedia: una tarjeta por especie sin importar cuándo se sacó cada captura (los filtros de año y mes siguen aplicando sobre las capturas). Al abrir el detalle de la especie, un carrusel con todas las fotos.
+- "Ser humano" se mantiene como especie capturable (el usuario confirmó que está bien).
+
+Lo que se hizo:
+- app/src/screens/CameraScreen.js: el indicador de carga ocupa toda la pantalla (top/bottom/left/right en 0) y se centra, con un fondo oscuro leve. El usuario confirmó que quedó bien.
+- core-api/src/services/captures.service.js: listByUser agrupa por especie con una agregación (agruparPorEspecie): foto y fecha de la captura más reciente y count. Con speciesId sigue devolviendo todas las capturas de esa especie (limit máx. 50), que usa el carrusel. El total y las páginas cuentan especies. Hubo que reconstruir la imagen de Docker del Core (docker compose up -d --build core-api): reiniciar el contenedor no recoge el código.
+- app/src/components/CaptureTile.js: insignia "xN" cuando la especie tiene más de una captura.
+- app/src/screens/SpeciesDetailScreen.js: PhotoCarousel (FlatList horizontal paginada, contador "1 / N") con las fotos del usuario; si no hay, se muestra la imagen del catálogo.
+- Diagnóstico de las fotos: se comprobó en la base que los archivos de GridFS son JPEG válidos. Con un componente temporal (DebugImage) el texto rojo mostró que fetch recibía 200 image/jpeg, pero el <Image> nativo de Android recibía 401 Unauthorized para la misma URL.
+- app/src/components/AuthImage.js (reemplaza a DebugImage, que se borró): descarga la imagen con fetch y el token, la convierte a data URI con FileReader y la guarda en una caché en memoria (60 entradas). Se usa en la enciclopedia, el resultado de la captura, el carrusel, la imagen de catálogo del detalle y la foto del avistamiento en el mapa (app/src/screens/MapScreen.js). Se desconoce por qué el <Image> nativo pierde la autorización.
+- Verificado: el usuario confirmó que quedó perfecto en el teléfono. No se corrió la suite de tests ni se agregaron tests nuevos para esto.
+```
+
 ## 2026-11-11 — Evaluación previo al despliegue
 
 ```text
@@ -583,6 +598,68 @@ algo que ya tenemos en mente es mover todos los secretos a un secret manager ún
 ```
 
 
+
+## 2026-11-11 — Mapa: vista inicial en el hexágono, límites de zoom y movimiento, mapa siempre montado
+
+```text
+Resumen de los mensajes y decisiones (app/src/screens/MapScreen.js y app/src/utils/h3Overlay.js como referencia):
+
+Pedido (texto original): "Corrección en MapScreen.js (mapa de hexágonos). 1. Vista inicial: al abrir el mapa, la vista debe mostrar solo la porción de terreno que corresponde al hexágono actual del usuario (el área en m² definida para un hexágono), centrada en su ubicación. 2. Límite de alejamiento: el usuario puede alejar el zoom, pero solo hasta mostrar su hexágono más los hexágonos vecinos, que son los únicos que muestran información. 3. Conservar el estado del mapa: hoy, cada vez que se monta MapScreen.js el mapa se recarga desde cero y recién después hace zoom a la ubicación del usuario. Hay que guardar el estado del mapa (región/cámara, zoom y ubicación) al salir de la pantalla, y restaurarlo al volver, para evitar la recarga y el salto de zoom." Criterios de aceptación: al abrir el mapa por primera vez se ve el hexágono del usuario y nada más; no se puede alejar más allá del hexágono y sus vecinos; al salir de MapScreen y volver, el mapa aparece directamente en el estado en que quedó, sin recarga ni animación de acercamiento. "Importante: no tomes ninguna decisión por tu cuenta. Antes de implementar, consultame cualquier punto ambiguo o que tenga más de una alternativa."
+Pedidos posteriores: "podemos hacer que el radio sea 100 m y que ese sea límite de vista? pero que te bloquee moverte, no quiero que solo bloquee el zoom hasta ver los hexágonos vecinos"; "elimina eso blanco que oculta lo que está más allá de los hexágonos"; y cómo traer sprint/03 a la rama sin commitear (se usó git stash).
+
+Decisiones dadas:
+- Encuadre inicial: encuadrar el hexágono y ocultar lo de afuera, pero sin dibujar el contorno del hexágono (eso ya lo hace el botón H3). Más tarde se pidió quitar la capa que ocultaba lo de afuera: la máscara se eliminó.
+- Límites: zoom y desplazamiento limitados a la zona (hexágono + vecinos); la zona sigue al usuario si cambia de hexágono.
+- Estado del mapa: mantener MapScreen montada (solo se oculta al cambiar de pestaña) en vez de guardar y restaurar la región.
+- Avistamientos: el alcance pasa a ser el de la zona (hexágono + vecinos) en vez de los 250 m, y los parámetros quedan configurables en un archivo de config del mapa.
+- Radio de ~100 m: hexágonos con k=2 (RING_K = 2), no un círculo exacto ni un cambio en el backend.
+- Movimiento: mapa fijo en la ubicación del usuario, solo zoom (la cámara sigue sus pasos).
+- No se quiso commitear: los cambios se guardaron con git stash, se actualizó sprint/03 y se trajo a la rama con git merge; el stash pop terminó sin conflictos.
+
+Lo que se hizo:
+- app/src/config/map.js (nuevo): parámetros del mapa. RING_K (2), LOCK_MAP_MOVEMENT (true), FOLLOW_ANIMATION_MS, HEX_FIT_FACTOR (1,05), RING_FIT_FACTOR (1), SIGHTINGS_REFRESH_MS, WATCH_DISTANCE_METERS, RECENTER_ANIMATION_MS y FALLBACK_REGION. La resolución H3 sigue en utils/h3.js porque tiene que coincidir con la del Core.
+- app/src/utils/mapView.js (nuevo): ringOf, boundsOf, regionFitting (región que encuadra el hexágono, con corrección por cos(latitud) y la proporción de la pantalla) y zoomForLongitudeSpan. app/test/mapView.test.js (nuevo): 3 tests.
+- app/src/screens/MapScreen.js: el mapa no se crea hasta conocer el tamaño de la pantalla y la ubicación, y arranca directo encuadrando el hexágono del usuario (sin Montevideo ni animación). Sin permiso o sin GPS usa la región por defecto y, si se concede el permiso, se centra solo. minZoomLevel sale de la zona; setMapBoundaries limita la cámara a la zona; scrollEnabled=false, rotateEnabled=false y pitchEnabled=false con LOCK_MAP_MOVEMENT; la cámara sigue al usuario con animateCamera. Los avistamientos se piden por celda (h3Index + k=RING_K) en vez de lat/lng con 250 m. Con la pantalla oculta (active=false) se pausan el GPS y los refrescos.
+- app/src/navigation/index.js: MapScreen se mantiene montada y se oculta con display: none al cambiar de pestaña o abrir el buzón.
+- Verificado con los tests de la app (32) y el parseo de los archivos tocados; el usuario confirmó en el teléfono que quedó perfecto. iOS: a pedido del usuario ("tiene que funcionar en iOS" y "tiene que ser igual que en Android") el límite también se definió para iPhone, sin probarlo en un iPhone: cameraZoomRange limita el alejamiento máximo (distancia de cámara calculada con la nueva constante IOS_CAMERA_FOV_DEGREES = 30, a ajustar probando) y, con LOCK_MAP_MOVEMENT en false, onRegionChange devuelve la cámara al borde de la zona apenas el centro sale (equivalente a setMapBoundaries de Android). utils/mapView.js suma cameraDistanceForLongitudeSpan y clampToBounds (tests: 34 en total). En iOS ya no se usa minZoomLevel (obsoleto en Apple Maps). El panel H3 de desarrollo ahora usa RING_K. Los cambios no están commiteados.
+```
+
+## 2026-11-11 — Mapa: marca de agua de Google y comercios ocultos
+
+```text
+Resumen de los mensajes y decisiones (app/src/screens/MapScreen.js y app/src/config/map.js como referencia):
+
+Pedido (texto original): "se puede eliminar la marca de agua de Google del mapa?". Después: "provemos eso del padding, si no me gusta te pido deshacerlo, además, se pueden ocultar los comercios? que solo se vean las calles?".
+
+Decisiones dadas:
+- La marca de agua no se elimina: los términos de uso de Google Maps exigen mantener el logo y la atribución, y quitarlos puede llevar a que bloqueen la clave de API. Se evaluó cambiar de proveedor (OpenStreetMap con UrlTile o MapLibre), pero también exige atribución y afectaría marcadores, polígonos y los límites de zoom y movimiento, así que no se hizo.
+- Se probó correr el logo con un margen interno del mapa; el usuario puede pedir deshacerlo.
+- Comercios y otros lugares de interés ocultos: solo se ven las calles y sus nombres.
+
+Lo que se hizo:
+- app/src/config/map.js: MAP_STYLE (estilo de Google que oculta poi y transit; para volver a mostrarlos, MAP_STYLE = undefined) y MAP_PADDING ({ top: 0, right: 0, bottom: 12, left: 12 }; en ceros se deshace).
+- app/src/screens/MapScreen.js: el MapView recibe customMapStyle={MAP_STYLE}, mapPadding={MAP_PADDING} (Android y iOS) y legalLabelInsets={MAP_PADDING} (Apple Maps). showsPointsOfInterest={false} ya estaba, pero Google en Android lo ignora, por eso seguían apareciendo comercios.
+- Verificado con los tests de la app (34) y el parseo de los archivos; sin pruebas en el teléfono. El margen de abajo sube el centro del mapa unos 6 dp.
+- Pendiente: en iPhone el mapa no define proveedor y usa Apple Maps, donde customMapStyle no aplica (solo con Google Maps), así que ahí seguirían los comercios. Unificarlo requiere fijar Google como proveedor en iOS y configurar la clave de API para iPhone
+
+## 2026-11-12 — Avatares con imágenes en el perfil
+
+```text
+Resumen de los mensajes y decisiones:
+
+Pedido (texto original): "de que tamaños deberian ser las imagenes de los avatars?", luego "tengo las imagenes, como hago para sustituirlos con los numero actuales?" y "queda al rededor de la imagen unas columnas lilas, eso es el fondo? porque no hace fill dentro del cuadro?".
+
+Decisiones dadas:
+- Los avatares siguen siendo predefinidos (avatar_1 a avatar_6, el backend solo guarda el código); la imagen se resuelve en la app.
+- Tamaño recomendado: 300x300 px, cuadradas, PNG (el cuadro más grande es de 100 dp y las pantallas llegan a 3x; 256x256 como alternativa liviana, 512x512 si algún día se muestran más grandes).
+- Las imágenes quedan en app/assets/avatars/ con el nombre del código.
+
+Lo que se hizo:
+- app/src/config/avatars.js (nuevo): AVATAR_IMAGES, mapa explícito código -> require() (Metro exige rutas estáticas) y AVATARS derivado de él.
+- app/src/components/ProfileForm.js: el avatar actual (100 dp) y los 6 botones del selector (52 dp) muestran un Image en lugar del número; si el código no está en el mapa se usa avatar_1.
+- Franjas lilas a los costados: era el fondo del contenedor visible porque resizeMode="contain" deja bandas si la imagen no es exactamente cuadrada. Se cambió a resizeMode="cover".
+- Verificado: sin pruebas en el teléfono tras el cambio a cover, y sin correr los tests de la app.
+```
 
 ## 2026-11-12 — Mapas nativos para Android e iOS
 
@@ -612,5 +689,3 @@ Requisitos:
   y no generes el APK final antes de eso.
 - Aclará la diferencia entre Expo Go, Expo como framework, EAS Build y AWS, y que los SDK de mapas se conectan con
   Google/Apple aunque el tráfico de negocio pase únicamente por el Edge.
-
-```

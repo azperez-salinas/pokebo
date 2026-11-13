@@ -61,17 +61,24 @@ export default function MainNavigation({ session, onUserUpdated, onLogout }) {
                 accessibilityLabel={label}
                 accessibilityState={{ selected }}
                 onPress={() => goToTab(id)}
-                style={camera ? styles.cameraTab : [styles.tab, selected && styles.selectedTab]}
+                style={[styles.tab, selected && !camera && styles.selectedTab]}
               >
                 {({ pressed }) => (
                   <>
-                    {camera ? (
-                      <PixelBox pressed={pressed} backgroundColor={colors.camera} style={[styles.cameraButton, selected && styles.selectedCamera]}>
+                    <View style={styles.iconSlot}>
+                      {camera ? (
+                        <PixelBox
+                          pressed={pressed}
+                          backgroundColor={colors.camera}
+                          outerStyle={styles.cameraButtonOuter}
+                          style={[styles.cameraButton, selected && styles.selectedCamera]}
+                        >
+                          <PixelIcon name={id} />
+                        </PixelBox>
+                      ) : (
                         <PixelIcon name={id} />
-                      </PixelBox>
-                    ) : (
-                      <PixelIcon name={id} />
-                    )}
+                      )}
+                    </View>
                     {!camera && <Text style={[styles.tabLabel, selected && styles.selectedLabel]}>{label.toUpperCase()}</Text>}
                   </>
                 )}

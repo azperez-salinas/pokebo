@@ -128,6 +128,123 @@ Escanear el código QR con Expo Go. La app cargará `EXPO_PUBLIC_API_URL` al ini
 solicitudes al Edge. En condiciones normales nunca es necesario iniciar `edge-api` o `core-api` mediante npm
 si ya están ejecutándose con Docker Compose.
 
+## Mapas en aplicaciones compiladas
+
+Pokebo utiliza `react-native-maps` con un proveedor diferente según la plataforma:
+
+- Android utiliza Google Maps y requiere una API key de **Maps SDK for Android**.
+- iOS utiliza Apple Maps mediante MapKit y no requiere una API key de mapas.
+
+La selección se realiza en `MapScreen`: Android recibe `PROVIDER_GOOGLE` e iOS conserva el proveedor nativo.
+No se debe configurar `iosGoogleMapsApiKey`, porque eso incorporaría Google Maps también en iOS.
+
+### Expo, EAS y AWS cumplen funciones diferentes
+
+- **Expo** sigue siendo el framework que genera y configura los proyectos nativos Android/iOS.
+- **EAS Build** firma y compila el APK o la aplicación iOS; no aloja el backend.
+- **AWS** alojará el Edge API, el Core API y sus dependencias. No reemplaza la compilación móvil ni las
+  credenciales del SDK de mapas.
+
+El tráfico de negocio de Pokebo debe ir siempre al Edge API. Los SDK nativos de mapas son la excepción esperada:
+se conectan directamente con Google en Android o Apple en iOS para descargar el mapa.
+
+### Identificadores nativos
+
+Las dos aplicaciones utilizan el mismo identificador:
+
+```text
+Android package: com.pokebo.app
+iOS bundle identifier: com.pokebo.app
+```
+
+### Configurar la clave de Google Maps para Android
+
+En Google Cloud se debe habilitar **Maps SDK for Android** y crear una API key con estas restricciones:
+
+```text
+Tipo de aplicación: Apps para Android
+Nombre del paquete: com.pokebo.app
+Huella SHA-1: huella del certificado de EAS que firma el APK
+Restricción de API: Maps SDK for Android
+```
+
+La huella SHA-1 no se inventa ni se obtiene del código. Como la aplicación se distribuirá mediante APK interno
+y no mediante Google Play, se debe utilizar la huella del keystore administrado por EAS.
+
+Primero iniciar sesión, vincular el proyecto y crear o consultar las credenciales Android:
+
+```powershell
+cd app
+npx.cmd eas-cli login
+npx.cmd eas-cli init
+npx.cmd eas-cli credentials -p android
+```
+
+En el administrador de credenciales se selecciona el perfil `preview` y se crea un keystore si todavía no existe.
+Luego se copia su huella SHA-1 a la restricción de la API key en Google Cloud. El keystore actual de Pokebo tiene:
+
+```text
+SHA-1: 51:1C:AB:44:63:08:73:BC:0A:D7:53:E3:1D:32:95:99:DC:77:DF:3E
+```
+
+No se debe borrar ni reemplazar este keystore: las actualizaciones de un APK deben conservar la misma firma.
+
+La clave real nunca se guarda en `app.json`, `app.config.js`, `.env.example`, el README ni Git. Se registra en el
+entorno `preview` de EAS con visibilidad sensible. Para evitar que el valor quede escrito en el historial de
+PowerShell, se carga de forma interactiva:
+
+```powershell
+npx eas-cli env:set --name GOOGLE_MAPS_API_KEY --value "<API_KEY>" --environment preview --visibility sensitive
+```
+
+Para desarrollo local se puede agregar temporalmente a `app/.env`, que está ignorado por Git:
+
+```env
+GOOGLE_MAPS_API_KEY=<API_KEY>
+```
+
+La clave termina incorporada en el APK porque Google Maps la necesita en el dispositivo. Su protección efectiva
+es la combinación de restricciones `com.pokebo.app` + SHA-1 + `Maps SDK for Android`, no mantener oculto el valor
+dentro del binario.
+
+### URL del Edge API para el build remoto
+
+`app/.env` conserva la URL LAN para Expo Go y no se sube a EAS porque está ignorado por Git. Cuando el Edge API
+esté desplegado en AWS, su URL pública HTTPS se registrará por separado en el entorno `preview`:
+
+No se debe usar la URL privada del Core, MongoDB o Redis. La compilación final queda pospuesta hasta contar con
+esta URL. Si cambia después, es necesario generar un APK nuevo porque `EXPO_PUBLIC_API_URL` se incorpora al bundle.
+
+### Generar e instalar el APK Android
+
+El perfil `preview` de `app/eas.json` genera un APK de distribución interna, instalable directamente y sin Google
+Play:
+
+```powershell
+cd app
+npx.cmd eas-cli build -p android --profile preview
+```
+
+Al finalizar, EAS entrega un enlace o código QR para descargar el APK. Android puede pedir autorización para
+instalar aplicaciones provenientes del navegador utilizado para descargarlo.
+
+### Generar la aplicación iOS
+
+iOS utiliza Apple Maps y no consulta `GOOGLE_MAPS_API_KEY`:
+
+```powershell
+cd app
+npx.cmd eas-cli build -p ios --profile preview
+```
+
+Aunque no se publique en App Store, instalar una compilación interna en un iPhone físico requiere una membresía
+activa de Apple Developer, registrar el dispositivo y firmar la aplicación mediante distribución Ad Hoc. EAS guía
+el registro del dispositivo y la creación de los certificados durante el primer build. Un archivo iOS compilado no
+puede instalarse libremente en cualquier iPhone como ocurre con un APK en Android.
+
+Después de cambiar una API key, un identificador, un certificado o un plugin nativo hay que generar un binario
+nuevo. Reiniciar Metro no actualiza la configuración nativa de una aplicación que ya fue compilada.
+
 ### 3. Comprobar la conexión desde el teléfono
 
 Abrir en el navegador del teléfono:

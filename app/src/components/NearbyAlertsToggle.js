@@ -41,25 +41,26 @@ export default function NearbyAlertsToggle() {
         onPress={toggle}
         style={styles.row}
       >
-        <Text style={styles.label}>AVISOS DE CERCANÍA</Text>
-        <PixelBox shadowOffset={2} backgroundColor={enabled ? palette.verde : palette.linea} style={styles.state}>
+        <View style={styles.texts}>
+          <Text style={styles.label}>Avisos de cercanía</Text>
+          <Text style={styles.hint}>Te avisamos sobre nuevos avistamientos cercanos mientras usás la app.</Text>
+        </View>
+        <PixelBox backgroundColor={enabled ? palette.verde : palette.linea} style={styles.state}>
           <Text style={styles.stateText}>{pending ? '...' : enabled ? 'SÍ' : 'NO'}</Text>
         </PixelBox>
       </Pressable>
-      <Text style={styles.hint}>
-        Te avisamos sobre nuevos avistamientos cercanos mientras usás la app.
-      </Text>
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, gap: spacing.xs },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.sm },
-  label: { ...type.body, color: palette.tinta },
-  state: { minWidth: 52, alignItems: 'center', paddingVertical: spacing.xs, paddingHorizontal: spacing.sm },
+  container: { gap: spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  texts: { flex: 1, gap: spacing.xs },
+  label: { ...type.subtitle, color: palette.tinta },
+  state: { minWidth: 56, alignItems: 'center', paddingVertical: spacing.sm, paddingHorizontal: spacing.sm },
   stateText: { ...type.labelLg, color: palette.tinta },
-  hint: { ...type.caption, color: palette.tinta },
+  hint: { ...type.caption, color: palette.azul },
   error: { ...type.error },
 });

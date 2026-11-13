@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Button from './Button';
-import Panel from './Panel';
-import PixelBox from './PixelBox';
 import TextField from './TextField';
 import { palette, border, spacing, type } from '../styles';
 import { updateMe } from '../services/users.service';
@@ -61,47 +59,38 @@ export default function ProfileForm({ user, onUserUpdated }) {
   }
 
   return (
-    <Panel style={styles.panel}>
-      <PixelBox
-        outerStyle={styles.currentAvatarOuter}
-        style={styles.currentAvatar}
-        backgroundColor={palette.cielo}
-        accessibilityLabel={`Avatar actual: ${original.avatar ?? 'avatar_1'}`}
-      >
-        <Image source={AVATAR_IMAGES[original.avatar] ?? AVATAR_IMAGES.avatar_1}
-          style={styles.avatarImage} resizeMode="cover" />
-      </PixelBox>
-      <Text style={styles.body}>Explorador: {original.username}</Text>
+    <View style={styles.form}>
       <TextField label="USUARIO" value={username} onChangeText={setUsername} editable={!saving} />
       <TextField label="BIOGRAFÍA" value={bio} onChangeText={setBio} editable={!saving} multiline maxLength={150}
         placeholder="Contá algo sobre vos..." counter={`${bio.length}/150`} autoCapitalize="sentences" />
-      <Text style={styles.label}>ELEGÍ TU AVATAR</Text>
-      <View style={styles.avatars} accessibilityRole="radiogroup">
-        {AVATARS.map((item, index) => (
-          <Pressable key={item} accessibilityRole="radio" accessibilityLabel={`Avatar ${index + 1}`}
-            accessibilityState={{ checked: avatar === item }} disabled={saving} onPress={() => setAvatar(item)}
-            style={[styles.avatar, avatar === item && styles.avatarSelected]}>
-            <Image source={AVATAR_IMAGES[item]} style={styles.avatarImage} resizeMode="cover" />
-          </Pressable>
-        ))}
+      <View style={styles.group}>
+        <Text style={styles.label}>AVATAR</Text>
+        <View style={styles.avatars} accessibilityRole="radiogroup">
+          {AVATARS.map((item, index) => (
+            <Pressable key={item} accessibilityRole="radio" accessibilityLabel={`Avatar ${index + 1}`}
+              accessibilityState={{ checked: avatar === item }} disabled={saving} onPress={() => setAvatar(item)}
+              style={[styles.avatar, avatar === item && styles.avatarSelected]}>
+              <Image source={AVATAR_IMAGES[item]} style={styles.avatarImage} resizeMode="cover" />
+            </Pressable>
+          ))}
+        </View>
       </View>
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
       {message ? <Text accessibilityRole="alert" style={styles.success}>{message}</Text> : null}
       <Button label={saving ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'} disabled={saving} onPress={save} />
-    </Panel>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  panel: { padding: spacing.lg, gap: spacing.lg },
-  body: { ...type.subtitle, color: palette.tinta },
+  form: { gap: spacing.lg },
+  group: { gap: spacing.sm },
   label: { ...type.label, color: palette.tinta },
-  avatars: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 1 },
-  avatar: { width: 52, height: 52, backgroundColor: palette.linea, borderColor: palette.tinta, borderWidth: border.width, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
-  avatarSelected: { backgroundColor: palette.cielo, borderColor: palette.azul },
+  // 3 avatares por fila, repartidos en todo el ancho
+  avatars: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.md },
+  avatar: { width: '31%', aspectRatio: 1, backgroundColor: palette.linea, borderColor: palette.tinta, borderWidth: border.width, borderRadius: 0, overflow: 'hidden' },
+  avatarSelected: { borderColor: palette.azul, borderWidth: border.width + 2 },
   avatarImage: { width: '100%', height: '100%' },
-  currentAvatarOuter: { alignSelf: 'center' },
-  currentAvatar: { width: 100, height: 100, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   error: { ...type.error, textAlign: 'center' },
   success: { ...type.body, color: palette.verde, textAlign: 'center' },
 });

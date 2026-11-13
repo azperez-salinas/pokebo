@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Button from '../components/Button';
 import ProfileScreen from './ProfileScreen';
 import NearbyAlertsToggle from '../components/NearbyAlertsToggle';
+import Section from '../components/Section';
 import { palette, spacing, type } from '../styles';
 
 export default function SettingsScreen({ onLogout }) {
@@ -27,9 +28,13 @@ export default function SettingsScreen({ onLogout }) {
       <ProfileScreen
         footer={(
           <>
-            <NearbyAlertsToggle />
-            {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-            <Button color="destructive" label={pending ? 'CERRANDO...' : 'CERRAR SESIÓN'} disabled={pending} onPress={signOut} />
+            <Section title="AVISOS">
+              <NearbyAlertsToggle />
+            </Section>
+            <View style={styles.logout}>
+              {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+              <Button color="destructive" label={pending ? 'CERRANDO...' : 'CERRAR SESIÓN'} disabled={pending} onPress={signOut} />
+            </View>
           </>
         )}
       />
@@ -39,5 +44,6 @@ export default function SettingsScreen({ onLogout }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.fondo },
-  error: { ...type.error, textAlign: 'center', marginBottom: spacing.sm },
+  logout: { gap: spacing.sm },
+  error: { ...type.error, textAlign: 'center' },
 });

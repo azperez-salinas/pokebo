@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Button from './Button';
-import Panel from './Panel';
 import TextField from './TextField';
 import { palette, spacing, type } from '../styles';
 import { changePassword } from '../services/auth.service';
@@ -57,32 +56,26 @@ export default function ChangePasswordForm({ accessToken }) {
     }
   }
 
-  return (
-    <Panel style={styles.panel}>
-      <Text style={styles.label}>CAMBIAR CONTRASEÑA</Text>
-      {changed ? (
-        <Text accessibilityRole="alert" style={styles.success}>
-          Contraseña actualizada. Volvé a iniciar sesión para continuar de forma segura.
-        </Text>
-      ) : (
-        <>
-          <PasswordField label="ACTUAL" value={currentPassword} onChangeText={setCurrentPassword}
-            autoComplete="current-password" disabled={saving} />
-          <PasswordField label="NUEVA" value={newPassword} onChangeText={setNewPassword}
-            autoComplete="new-password" disabled={saving} />
-          <PasswordField label="CONFIRMAR NUEVA" value={confirmation} onChangeText={setConfirmation}
-            autoComplete="new-password" disabled={saving} />
-          {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-          <Button label={saving ? 'GUARDANDO...' : 'ACTUALIZAR CLAVE'} onPress={save} disabled={saving} />
-        </>
-      )}
-    </Panel>
+  return changed ? (
+    <Text accessibilityRole="alert" style={styles.success}>
+      Contraseña actualizada. Volvé a iniciar sesión para continuar de forma segura.
+    </Text>
+  ) : (
+    <View style={styles.form}>
+      <PasswordField label="ACTUAL" value={currentPassword} onChangeText={setCurrentPassword}
+        autoComplete="current-password" disabled={saving} />
+      <PasswordField label="NUEVA" value={newPassword} onChangeText={setNewPassword}
+        autoComplete="new-password" disabled={saving} />
+      <PasswordField label="CONFIRMAR NUEVA" value={confirmation} onChangeText={setConfirmation}
+        autoComplete="new-password" disabled={saving} />
+      {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+      <Button label={saving ? 'GUARDANDO...' : 'ACTUALIZAR CLAVE'} onPress={save} disabled={saving} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  panel: { padding: spacing.lg, gap: spacing.lg },
-  label: { ...type.label, color: palette.tinta },
+  form: { gap: spacing.lg },
   error: { ...type.error, textAlign: 'center' },
   success: { ...type.body, color: palette.verde, textAlign: 'center' },
 });

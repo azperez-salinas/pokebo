@@ -138,6 +138,16 @@ Pokebo utiliza `react-native-maps` con un proveedor diferente según la platafor
 La selección se realiza en `MapScreen`: Android recibe `PROVIDER_GOOGLE` e iOS conserva el proveedor nativo.
 No se debe configurar `iosGoogleMapsApiKey`, porque eso incorporaría Google Maps también en iOS.
 
+### Expo, EAS y AWS cumplen funciones diferentes
+
+- **Expo** sigue siendo el framework que genera y configura los proyectos nativos Android/iOS.
+- **EAS Build** firma y compila el APK o la aplicación iOS; no aloja el backend.
+- **AWS** alojará el Edge API, el Core API y sus dependencias. No reemplaza la compilación móvil ni las
+  credenciales del SDK de mapas.
+
+El tráfico de negocio de Pokebo debe ir siempre al Edge API. Los SDK nativos de mapas son la excepción esperada:
+se conectan directamente con Google en Android o Apple en iOS para descargar el mapa.
+
 ### Identificadores nativos
 
 Las dos aplicaciones utilizan el mismo identificador:
@@ -165,16 +175,23 @@ Primero iniciar sesión, vincular el proyecto y crear o consultar las credencial
 
 ```powershell
 cd app
-npx eas-cli login
-npx eas-cli init
-npx eas-cli credentials -p android
+npx.cmd eas-cli login
+npx.cmd eas-cli init
+npx.cmd eas-cli credentials -p android
 ```
 
 En el administrador de credenciales se selecciona el perfil `preview` y se crea un keystore si todavía no existe.
-Luego se copia su huella SHA-1 a la restricción de la API key en Google Cloud.
+Luego se copia su huella SHA-1 a la restricción de la API key en Google Cloud. El keystore actual de Pokebo tiene:
+
+```text
+SHA-1: 51:1C:AB:44:63:08:73:BC:0A:D7:53:E3:1D:32:95:99:DC:77:DF:3E
+```
+
+No se debe borrar ni reemplazar este keystore: las actualizaciones de un APK deben conservar la misma firma.
 
 La clave real nunca se guarda en `app.json`, `app.config.js`, `.env.example`, el README ni Git. Se registra en el
-entorno `preview` de EAS con visibilidad sensible:
+entorno `preview` de EAS con visibilidad sensible. Para evitar que el valor quede escrito en el historial de
+PowerShell, se carga de forma interactiva:
 
 ```powershell
 npx eas-cli env:set --name GOOGLE_MAPS_API_KEY --value "<API_KEY>" --environment preview --visibility sensitive
@@ -190,6 +207,14 @@ La clave termina incorporada en el APK porque Google Maps la necesita en el disp
 es la combinación de restricciones `com.pokebo.app` + SHA-1 + `Maps SDK for Android`, no mantener oculto el valor
 dentro del binario.
 
+### URL del Edge API para el build remoto
+
+`app/.env` conserva la URL LAN para Expo Go y no se sube a EAS porque está ignorado por Git. Cuando el Edge API
+esté desplegado en AWS, su URL pública HTTPS se registrará por separado en el entorno `preview`:
+
+No se debe usar la URL privada del Core, MongoDB o Redis. La compilación final queda pospuesta hasta contar con
+esta URL. Si cambia después, es necesario generar un APK nuevo porque `EXPO_PUBLIC_API_URL` se incorpora al bundle.
+
 ### Generar e instalar el APK Android
 
 El perfil `preview` de `app/eas.json` genera un APK de distribución interna, instalable directamente y sin Google
@@ -197,7 +222,7 @@ Play:
 
 ```powershell
 cd app
-npx eas-cli build -p android --profile preview
+npx.cmd eas-cli build -p android --profile preview
 ```
 
 Al finalizar, EAS entrega un enlace o código QR para descargar el APK. Android puede pedir autorización para
@@ -209,7 +234,7 @@ iOS utiliza Apple Maps y no consulta `GOOGLE_MAPS_API_KEY`:
 
 ```powershell
 cd app
-npx eas-cli build -p ios --profile preview
+npx.cmd eas-cli build -p ios --profile preview
 ```
 
 Aunque no se publique en App Store, instalar una compilación interna en un iPhone físico requiere una membresía

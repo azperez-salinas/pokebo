@@ -581,3 +581,36 @@ quiero que aproveches para encontrar inconsistencias y mejoras contrastadas en e
 
 algo que ya tenemos en mente es mover todos los secretos a un secret manager único, ya que lo que consideramos la dmz (edge-api), no debe tener secretos importantes si se llega a conquistar
 ```
+
+
+
+## 2026-11-12 — Mapas nativos para Android e iOS
+
+```text
+Trabajá sobre el repositorio actual de Pokebo y prepará la app Expo para que una compilación nativa independiente
+use Google Maps en Android y Apple Maps en iOS. No despliegues ni configures todavía el backend en AWS: la URL
+pública del Edge API se definirá después.
+
+Quiero orientación alta. Antes de cambiar algo, revisá README.md, la configuración de Expo, las dependencias, la
+pantalla del mapa y el estado de Git. Explicá qué hace cada paso, por qué es necesario y qué riesgo relevante tiene.
+No reemplaces bibliotecas ni inventes identificadores si el proyecto ya define esos datos.
+
+Requisitos:
+- Conservá Expo Go para desarrollo, pero prepará un binario propio.
+- Android debe usar Maps SDK for Android y `com.pokebo.app`; iOS debe usar Apple Maps y no debe recibir una key de
+  Google. Usá `com.pokebo.app` también como bundle identifier de iOS.
+- Seleccioná el proveedor explícitamente por plataforma con react-native-maps.
+- Configurá EAS para generar un APK de distribución interna; no se publicará en Google Play.
+- Guiame para crear o consultar el keystore EAS, obtener su SHA-1 y restringir la key en Google Cloud al package,
+  certificado y exclusivamente Maps SDK for Android.
+- Nunca escribas valores reales en Git, README, prompts.md, app.json, app.config.js o eas.json. Documentá solo
+  `GOOGLE_MAPS_API_KEY` en `.env.example`; el valor remoto debe guardarse como variable `sensitive` de EAS.
+- Al verificar una key, informá solamente presencia, longitud y formato; nunca muestres su valor.
+- Usá configuración dinámica de Expo para pasar la key solo a `androidGoogleMapsApiKey`. Un build EAS Android debe
+  fallar claramente si falta, pero iOS debe configurarse sin ella.
+- Conservá `EXPO_PUBLIC_API_URL` local para Expo Go. No la cargues en EAS hasta que el Edge tenga URL HTTPS en AWS
+  y no generes el APK final antes de eso.
+- Aclará la diferencia entre Expo Go, Expo como framework, EAS Build y AWS, y que los SDK de mapas se conectan con
+  Google/Apple aunque el tráfico de negocio pase únicamente por el Edge.
+
+```

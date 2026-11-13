@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import useAuth from '../hooks/useAuth';
 import { disableNearbyAlerts, enableNearbyAlerts } from '../services/nearbyAlerts.service';
-import { fonts, palette } from '../styles';
+import PixelBox from './PixelBox';
+import { palette, spacing, type } from '../styles';
 
 const ERRORS = {
   FOREGROUND_DENIED: 'Necesitamos el permiso de ubicación para avisarte. Habilitalo en los ajustes del teléfono.',
@@ -40,23 +41,26 @@ export default function NearbyAlertsToggle() {
         onPress={toggle}
         style={styles.row}
       >
-        <Text style={styles.label}>AVISOS DE CERCANÍA</Text>
-        <Text style={[styles.state, enabled && styles.stateOn]}>{pending ? '...' : enabled ? 'SÍ' : 'NO'}</Text>
+        <View style={styles.texts}>
+          <Text style={styles.label}>Avisos de cercanía</Text>
+          <Text style={styles.hint}>Te avisamos sobre nuevos avistamientos cercanos mientras usás la app.</Text>
+        </View>
+        <PixelBox backgroundColor={enabled ? palette.verde : palette.linea} style={styles.state}>
+          <Text style={styles.stateText}>{pending ? '...' : enabled ? 'SÍ' : 'NO'}</Text>
+        </PixelBox>
       </Pressable>
-      <Text style={styles.hint}>
-        Te avisamos sobre nuevos avistamientos cercanos mientras usás la app.
-      </Text>
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingVertical: 8, gap: 4 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
-  label: { fontFamily: fonts.body, fontSize: 22, color: palette.tinta },
-  state: { fontFamily: fonts.body, fontSize: 22, color: palette.linea },
-  stateOn: { color: palette.azul },
-  hint: { fontFamily: fonts.body, fontSize: 16, lineHeight: 18, color: palette.tinta },
-  error: { fontFamily: fonts.body, fontSize: 17, lineHeight: 19, color: palette.rosa },
+  container: { gap: spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  texts: { flex: 1, gap: spacing.xs },
+  label: { ...type.subtitle, color: palette.tinta },
+  state: { minWidth: 56, alignItems: 'center', paddingVertical: spacing.sm, paddingHorizontal: spacing.sm },
+  stateText: { ...type.labelLg, color: palette.tinta },
+  hint: { ...type.caption, color: palette.azul },
+  error: { ...type.error },
 });

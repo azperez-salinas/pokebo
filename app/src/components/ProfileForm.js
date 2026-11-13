@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import AuthButton from './AuthButton';
-import { palette, fonts } from '../styles';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import Button from './Button';
+import TextField from './TextField';
+import { palette, border, spacing, type } from '../styles';
 import { updateMe } from '../services/users.service';
 
 import { AVATARS, AVATAR_IMAGES } from '../config/avatars';
@@ -58,72 +59,38 @@ export default function ProfileForm({ user, onUserUpdated }) {
   }
 
   return (
-    <View style={styles.panel}>
-      <View
-      style={styles.currentAvatar}
-      accessibilityLabel={`Avatar actual: ${original.avatar ?? 'avatar_1'}`}>
-        <Image source={AVATAR_IMAGES[original.avatar] ?? AVATAR_IMAGES.avatar_1}
-          style={styles.avatarImage} resizeMode="cover" />
-      </View>
-      <Text style={styles.body}>Explorador: {original.username}</Text>
-      <View style={styles.field}>
-        <Text style={styles.label}>USUARIO</Text>
-        <TextInput accessibilityLabel="Usuario" style={styles.input} value={username}
-          onChangeText={setUsername} editable={!saving} autoCapitalize="none" autoCorrect={false} />
-      </View>
-      <View style={styles.field}>
-        <Text style={styles.label}>BIOGRAFÍA</Text>
-        <TextInput accessibilityLabel="Biografía" style={[styles.input, styles.multiline]}
-          value={bio} onChangeText={setBio} editable={!saving} multiline maxLength={150}
-          placeholder="Contá algo sobre vos..." placeholderTextColor={palette.azul} />
-        <Text style={styles.counter}>{bio.length}/150</Text>
-      </View>
-      <Text style={styles.label}>ELEGÍ TU AVATAR</Text>
-      <View style={styles.avatars} accessibilityRole="radiogroup">
-        {AVATARS.map((item, index) => (
-          <Pressable key={item} accessibilityRole="radio" accessibilityLabel={`Avatar ${index + 1}`}
-            accessibilityState={{ checked: avatar === item }} disabled={saving} onPress={() => setAvatar(item)}
-            style={[styles.avatar, avatar === item && styles.avatarSelected]}>
-            <Image source={AVATAR_IMAGES[item]} style={styles.avatarImage} resizeMode="cover" />
-          </Pressable>
-        ))}
+    <View style={styles.form}>
+      <TextField label="USUARIO" value={username} onChangeText={setUsername} editable={!saving} />
+      <TextField label="BIOGRAFÍA" value={bio} onChangeText={setBio} editable={!saving} multiline maxLength={150}
+        placeholder="Contá algo sobre vos..." counter={`${bio.length}/150`} autoCapitalize="sentences" />
+      <View style={styles.group}>
+        <Text style={styles.label}>AVATAR</Text>
+        <View style={styles.avatars} accessibilityRole="radiogroup">
+          {AVATARS.map((item, index) => (
+            <Pressable key={item} accessibilityRole="radio" accessibilityLabel={`Avatar ${index + 1}`}
+              accessibilityState={{ checked: avatar === item }} disabled={saving} onPress={() => setAvatar(item)}
+              style={[styles.avatar, avatar === item && styles.avatarSelected]}>
+              <Image source={AVATAR_IMAGES[item]} style={styles.avatarImage} resizeMode="cover" />
+            </Pressable>
+          ))}
+        </View>
       </View>
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
       {message ? <Text accessibilityRole="alert" style={styles.success}>{message}</Text> : null}
-      <AuthButton label={saving ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'} disabled={saving} onPress={save} />
+      <Button label={saving ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'} disabled={saving} onPress={save} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  panel: { backgroundColor: palette.blanco, borderColor: palette.tinta, borderWidth: 4, borderRadius: 6, padding: 16, gap: 14 },
-  body: { fontFamily: fonts.body, fontSize: 23, color: palette.tinta },
-  field: { gap: 7 },
-  label: { fontFamily: fonts.display, fontSize: 9, lineHeight: 16, color: palette.tinta },
-  input: { borderWidth: 3, borderColor: palette.tinta, borderRadius: 5, backgroundColor: palette.fondo, padding: 10, fontFamily: fonts.body, fontSize: 23, color: palette.tinta },
-  multiline: { minHeight: 95, textAlignVertical: 'top' },
-  counter: { fontFamily: fonts.display, fontSize: 9, color: palette.azul, textAlign: 'right' },
-  avatars: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  avatar: { width: 52, height: 52, backgroundColor: palette.linea, borderColor: palette.tinta, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
-  avatarSelected: { backgroundColor: palette.cielo, borderColor: palette.azul, borderWidth: 4 },
+  form: { gap: spacing.lg },
+  group: { gap: spacing.sm },
+  label: { ...type.label, color: palette.tinta },
+  // 3 avatares por fila, repartidos en todo el ancho
+  avatars: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.md },
+  avatar: { width: '31%', aspectRatio: 1, backgroundColor: palette.linea, borderColor: palette.tinta, borderWidth: border.width, borderRadius: 0, overflow: 'hidden' },
+  avatarSelected: { borderColor: palette.azul, borderWidth: border.width + 2 },
   avatarImage: { width: '100%', height: '100%' },
-  currentAvatar: {
-  width: 100,
-  height: 100,
-  alignSelf: 'center',
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: palette.cielo,
-  borderColor: palette.tinta,
-  borderWidth: 4,
-  borderRadius: 6,
-  borderBottomWidth: 8,
-  },
-  currentAvatarText: {
-    fontFamily: fonts.display,
-    fontSize: 32,
-    color: palette.azul,
-  },
-  error: { fontFamily: fonts.body, fontSize: 22, color: palette.rosa, textAlign: 'center' },
-  success: { fontFamily: fonts.body, fontSize: 22, color: palette.verde, textAlign: 'center' },
+  error: { ...type.error, textAlign: 'center' },
+  success: { ...type.body, color: palette.verde, textAlign: 'center' },
 });

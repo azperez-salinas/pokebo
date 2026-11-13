@@ -1,10 +1,13 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
-import AuthButton from '../components/AuthButton';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import Button from '../components/Button';
+import Chip from '../components/Chip';
+import Icon from '../components/Icon';
 import Panel from '../components/Panel';
+import ProgressBar from '../components/ProgressBar';
 import AuthImage from '../components/AuthImage';
 import { photoSource } from '../services/images.service';
-import styles, { icons, palette, fonts } from '../styles';
+import styles, { icons, palette, spacing, type } from '../styles';
 
 // Mensajes según el `code` de la API (tabla de errores del documento de diseño). El cliente decide por code.
 const ERRORS = {
@@ -21,20 +24,13 @@ const ERRORS = {
 };
 const GENERIC = { title: 'Algo salió mal', message: 'No se pudo completar la captura. Probá de nuevo.' };
 
-const BAR_SEGMENTS = 10;
-
 // Barra de confianza de 10 segmentos (confidence va de 0 a 1)
 function ConfidenceBar({ confidence }) {
   const percent = Math.round(Math.min(Math.max(confidence, 0), 1) * 100);
-  const filled = Math.round((percent / 100) * BAR_SEGMENTS);
   return (
     <View style={local.confidenceRow} accessible accessibilityLabel={`Confianza ${percent}%`}>
       <Text style={local.label}>Confianza</Text>
-      <View style={local.bar}>
-        {Array.from({ length: BAR_SEGMENTS }, (_, index) => (
-          <View key={index} style={[local.segment, index < filled && local.segmentFilled]} />
-        ))}
-      </View>
+      <ProgressBar style={local.bar} value={percent} max={100} color="verde" />
       <Text style={local.percent}>{percent}%</Text>
     </View>
   );
@@ -52,25 +48,25 @@ export default function CaptureResultScreen({ result, error, onBack, onNext }) {
         <Text accessibilityRole="header" style={styles.title}>{(info?.title || GENERIC.title).toUpperCase()}</Text>
         <Text accessibilityRole="alert" style={[styles.message, local.error]}>{info?.message || GENERIC.message}</Text>
         <View style={local.actions}>
-          <AuthButton label="REINTENTAR" onPress={onBack} />
+          <Button label="REINTENTAR" onPress={onBack} />
         </View>
       </View>
     );
   }
 
   return (
-    <View style={local.container}>
+    <ScrollView style={local.container} contentContainerStyle={local.content}>
       <View style={local.titleRow}>
-        <Image source={icons.extras.star} style={local.star} resizeMode="contain" />
+        <Icon source={icons.extras.star} size={24} />
         <Text accessibilityRole="header" style={local.title}>{'¡CAPTURA\nLOGRADA!'}</Text>
-        <Image source={icons.extras.star} style={local.star} resizeMode="contain" />
+        <Icon source={icons.extras.star} size={24} />
       </View>
 
       <Panel style={local.photoPanel}>
         <AuthImage source={photoSource(capture.photoUrl)} style={local.photo} resizeMode="cover" accessibilityLabel="Foto de la captura" />
         {capture.isNewSpecies ? (
           <View style={local.badge}>
-            <Text style={local.badgeText}>NUEVA</Text>
+            <Chip label="NUEVA" color={palette.rosa} />
           </View>
         ) : null}
       </Panel>
@@ -85,42 +81,42 @@ export default function CaptureResultScreen({ result, error, onBack, onNext }) {
         <Panel style={local.achievementPanel}>
           <Text style={local.achievementTitle}>{unlocked.length === 1 ? '¡LOGRO DESBLOQUEADO!' : '¡LOGROS DESBLOQUEADOS!'}</Text>
           {unlocked.map((achievement) => (
-            <Text key={achievement.code} style={local.achievementName}>★ {achievement.name}</Text>
+            <View key={achievement.code} style={local.achievementRow}>
+              <Icon source={icons.extras.star} size={24} />
+              <Text style={local.achievementName}>{achievement.name}</Text>
+            </View>
           ))}
         </Panel>
       ) : null}
 
       <View style={local.actions}>
-        <AuthButton label="SIGUIENTE" onPress={onNext} />
-        <View style={local.gap} />
-        <AuthButton label="OTRA FOTO" color="yellow" onPress={onBack} />
+        <View style={local.action}><Button label="OTRA FOTO" color="cielo" onPress={onBack} /></View>
+        <View style={local.action}><Button label="SIGUIENTE" onPress={onNext} /></View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const local = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.fondo, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  star: { width: 36, height: 36 },
-  title: { fontFamily: fonts.display, fontSize: 16, lineHeight: 24, color: palette.tinta, textAlign: 'center', marginHorizontal: 12 },
+  container: { flex: 1, backgroundColor: palette.fondo },
+  content: { flexGrow: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.lg },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg },
+  title: { ...type.title, color: palette.tinta, textAlign: 'center', marginHorizontal: spacing.md },
   photoPanel: { padding: 0, overflow: 'hidden', aspectRatio: 1.4, backgroundColor: palette.linea },
   photo: { width: '100%', height: '100%' },
-  badge: { position: 'absolute', top: 8, left: 8, backgroundColor: palette.rosa, borderWidth: 3, borderColor: palette.tinta, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 },
-  badgeText: { fontFamily: fonts.display, fontSize: 10, color: palette.tinta },
-  infoPanel: { marginTop: 14, paddingVertical: 14 },
-  name: { fontFamily: fonts.display, fontSize: 20, lineHeight: 28, color: palette.tinta },
-  scientific: { fontFamily: fonts.body, fontSize: 24, color: palette.azul, fontStyle: 'italic', marginTop: 4 },
-  confidenceRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
-  label: { fontFamily: fonts.body, fontSize: 22, color: palette.tinta, width: 96 },
-  bar: { flex: 1, flexDirection: 'row', height: 24, padding: 3, backgroundColor: palette.linea, borderWidth: 3, borderColor: palette.tinta, borderRadius: 4 },
-  segment: { flex: 1, marginHorizontal: 1, backgroundColor: palette.linea },
-  segmentFilled: { backgroundColor: palette.verde },
-  percent: { fontFamily: fonts.body, fontSize: 22, color: palette.tinta, width: 52, textAlign: 'right' },
-  achievementPanel: { marginTop: 14, paddingVertical: 10, backgroundColor: palette.amarillo },
-  achievementTitle: { fontFamily: fonts.display, fontSize: 10, color: palette.tinta, marginBottom: 6 },
-  achievementName: { fontFamily: fonts.body, fontSize: 22, color: palette.tinta },
-  error: { color: palette.rosa, fontFamily: fonts.body },
-  actions: { width: '100%', marginTop: 'auto' },
-  gap: { height: 12 },
+  badge: { position: 'absolute', top: spacing.sm, left: spacing.sm },
+  infoPanel: { marginTop: spacing.md, paddingVertical: spacing.md },
+  name: { ...type.title, color: palette.tinta },
+  scientific: { ...type.subtitle, color: palette.azul, marginTop: spacing.xs },
+  confidenceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
+  label: { ...type.body, color: palette.tinta, width: 96 },
+  bar: { flex: 1 },
+  percent: { ...type.body, color: palette.tinta, width: 52, textAlign: 'right' },
+  achievementPanel: { marginTop: spacing.md, paddingVertical: spacing.sm + 2, backgroundColor: palette.amarillo },
+  achievementTitle: { ...type.labelLg, color: palette.tinta, marginBottom: spacing.sm },
+  achievementRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  achievementName: { ...type.body, color: palette.tinta, flex: 1 },
+  error: { color: palette.rosa },
+  actions: { flexDirection: 'row', width: '100%', marginTop: 'auto', paddingTop: spacing.lg, gap: spacing.md },
+  action: { flex: 1 },
 });

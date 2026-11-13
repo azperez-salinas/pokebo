@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
-import AuthButton from '../components/AuthButton';
+import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Button from '../components/Button';
 import AuthImage from '../components/AuthImage';
+import Panel from '../components/Panel';
+import PixelSpinner from '../components/PixelSpinner';
+import { BackButton } from '../components/ScreenHeader';
 import { getSpecies } from '../services/species.service';
 import { getMyCaptures } from '../services/captures.service';
 import { photoSource, speciesImageSource } from '../services/images.service';
-import { colors, fonts, palette } from '../styles';
+import { border, palette, spacing, type } from '../styles';
 
 const FIELDS = [
   ['HÁBITAT', 'habitat'],
@@ -63,15 +66,15 @@ export default function SpeciesDetailScreen({ speciesId, onBack }) {
 
   return (
     <ScrollView style={local.container} contentContainerStyle={local.content}>
-      <AuthButton label="ATRÁS" onPress={onBack} />
+      <BackButton label="ATRÁS" onPress={onBack} />
 
       {error ? (
-        <View style={local.block}>
+        <Panel style={local.block}>
           <Text accessibilityRole="alert" style={local.text}>{error.message}</Text>
-          <AuthButton label="REINTENTAR" onPress={() => setAttempt((current) => current + 1)} />
-        </View>
+          <Button label="REINTENTAR" onPress={() => setAttempt((current) => current + 1)} />
+        </Panel>
       ) : !species ? (
-        <ActivityIndicator accessibilityLabel="Cargando especie" color={colors.accent} style={local.loader} />
+        <PixelSpinner accessibilityLabel="Cargando especie" style={local.loader} />
       ) : (
         <>
           {photos.length > 0 ? (
@@ -79,29 +82,34 @@ export default function SpeciesDetailScreen({ speciesId, onBack }) {
           ) : species.imagesIds?.[0] ? (
             <AuthImage source={speciesImageSource(species.imagesIds[0])} style={local.photo} resizeMode="cover" />
           ) : null}
-          <View style={local.block}>
+          <Panel style={local.block}>
             <Text accessibilityRole="header" style={local.name}>{species.commonName}</Text>
             <Text style={local.scientific}>{species.scientificName}</Text>
             <Text style={local.text}>{species.family} · {species.class}</Text>
             <Text style={local.text}>Capturas tuyas: {species.progress.captures}</Text>
-          </View>
+          </Panel>
           {species.description ? (
-            <View style={local.block}>
+            <Panel style={local.block}>
               <Text style={local.label}>DESCRIPCIÓN</Text>
               <Text style={local.text}>{species.description}</Text>
-            </View>
+            </Panel>
           ) : null}
           {FIELDS.filter(([, key]) => species[key]).map(([label, key]) => (
-            <View key={key} style={local.block}>
+            <Panel key={key} style={local.block}>
               <Text style={local.label}>{label}</Text>
               <Text style={local.text}>{species[key]}</Text>
-            </View>
+            </Panel>
           ))}
           {species.funFacts?.length ? (
-            <View style={local.block}>
+            <Panel style={local.block}>
               <Text style={local.label}>CURIOSIDADES</Text>
-              {species.funFacts.map((fact) => <Text key={fact} style={local.text}>▸ {fact}</Text>)}
-            </View>
+              {species.funFacts.map((fact) => (
+                <View key={fact} style={local.fact}>
+                  <View style={local.bullet} />
+                  <Text style={[local.text, local.factText]}>{fact}</Text>
+                </View>
+              ))}
+            </Panel>
           ) : null}
         </>
       )}
@@ -111,13 +119,16 @@ export default function SpeciesDetailScreen({ speciesId, onBack }) {
 
 const local = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.fondo },
-  content: { padding: 16, gap: 12 },
-  loader: { marginTop: 32 },
-  counter: { fontFamily: fonts.display, fontSize: 10, color: palette.tinta, textAlign: 'center', marginTop: 8 },
-  photo: { width: '100%', aspectRatio: 1, borderWidth: 3, borderColor: palette.tinta, borderRadius: 4, backgroundColor: palette.linea },
-  block: { backgroundColor: palette.blanco, borderWidth: 3, borderColor: palette.tinta, borderRadius: 4, padding: 12, gap: 6 },
-  name: { fontFamily: fonts.display, fontSize: 16, lineHeight: 24, color: palette.tinta },
-  scientific: { fontFamily: fonts.body, fontSize: 22, fontStyle: 'italic', color: palette.azul },
-  label: { fontFamily: fonts.display, fontSize: 10, color: palette.azul },
-  text: { fontFamily: fonts.body, fontSize: 20, lineHeight: 22, color: palette.tinta },
+  content: { padding: spacing.lg, gap: spacing.md },
+  loader: { marginTop: spacing.xl * 1.5 },
+  counter: { ...type.labelLg, color: palette.tinta, textAlign: 'center', marginTop: spacing.sm },
+  photo: { width: '100%', aspectRatio: 1, borderWidth: border.width, borderColor: border.color, borderRadius: 0, backgroundColor: palette.linea },
+  block: { gap: spacing.sm },
+  name: { ...type.title, color: palette.tinta },
+  scientific: { ...type.subtitle, color: palette.azul },
+  label: { ...type.labelLg, color: palette.azul },
+  text: { ...type.body, color: palette.tinta },
+  fact: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  bullet: { width: 8, height: 8, marginTop: 8, backgroundColor: palette.azul },
+  factText: { flex: 1 },
 });

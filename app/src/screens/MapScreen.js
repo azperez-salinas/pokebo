@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, Image, ImageBackground, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Image, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 import MapView, { Marker, Polygon, PROVIDER_GOOGLE } from 'react-native-maps';
-import AuthButton from '../components/AuthButton';
+import Button from '../components/Button';
+import Chip from '../components/Chip';
+import Icon from '../components/Icon';
+import Panel from '../components/Panel';
+import PixelBox from '../components/PixelBox';
+import PixelSpinner from '../components/PixelSpinner';
 import useLocation from '../hooks/useLocation';
 import { getSightings } from '../services/map.service';
 import { getMyCaptures } from '../services/captures.service';
@@ -24,7 +29,7 @@ import {
   SIGHTINGS_REFRESH_MS,
   WATCH_DISTANCE_METERS,
 } from '../config/map';
-import { buttons, colors, fonts, icons, palette } from '../styles';
+import { border, icons, palette, spacing, type } from '../styles';
 
 function elapsedSince(seenAt) {
   const timestamp = new Date(seenAt).getTime();
@@ -500,51 +505,44 @@ export default function MapScreen({ active = true }) {
       </MapView>
       ) : (
         <View style={local.mapLoading} pointerEvents="none">
-          <ActivityIndicator accessibilityLabel="Cargando mapa" color={palette.azul} />
+          <PixelSpinner accessibilityLabel="Cargando mapa" />
         </View>
       )}
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Actualizar avistamientos"
-        accessibilityState={{ busy: mapLoading }}
-        onPress={refreshMapSightings}
-        disabled={mapLoading}
-        style={({ pressed }) => [
-          local.refreshButton,
-          pressed && local.refreshPressed,
-        ]}
-      >
-        {mapLoading ? (
-          <ActivityIndicator color={palette.azul} />
-        ) : (
-          <Text style={local.refreshText}>↻</Text>
-        )}
-      </Pressable>
+      <View style={local.refreshButton}>
+        <Button
+          size="small"
+          color="blanco"
+          label={mapLoading ? 'ACTUALIZANDO...' : 'ACTUALIZAR'}
+          accessibilityLabel="Actualizar avistamientos"
+          disabled={mapLoading}
+          onPress={refreshMapSightings}
+        />
+      </View>
 
       {mapError ? (
-        <View style={local.mapErrorBox}>
+        <Panel outerStyle={local.mapErrorBox} style={local.mapErrorFace} shadowOffset={2}>
           <Text accessibilityRole="alert" style={local.mapErrorText}>
             {mapError}
           </Text>
-        </View>
+        </Panel>
       ) : null}
 
       {needsPermission ? (
-        <View style={local.card}>
+        <Panel outerStyle={local.card} style={local.cardFace}>
           <Text style={local.cardText}>
             {permission.canAskAgain
               ? 'Activá tu ubicación para ver el mapa centrado donde estás.'
               : 'El permiso de ubicación está desactivado. Habilitalo en los ajustes del teléfono.'}
           </Text>
-          <AuthButton label={permission.canAskAgain ? 'USAR MI UBICACIÓN' : 'ABRIR AJUSTES'} onPress={enableLocation} />
-        </View>
+          <Button label={permission.canAskAgain ? 'USAR MI UBICACIÓN' : 'ABRIR AJUSTES'} onPress={enableLocation} />
+        </Panel>
       ) : null}
 
       {granted && error?.code === 'LOCATION_UNAVAILABLE' ? (
-        <View style={local.card}>
+        <Panel outerStyle={local.card} style={local.cardFace}>
           <Text accessibilityRole="alert" style={local.cardText}>No pudimos obtener tu ubicación. Revisá que el GPS esté activado.</Text>
-        </View>
+        </Panel>
       ) : null}
 
       {granted ? (
@@ -557,15 +555,11 @@ export default function MapScreen({ active = true }) {
           style={local.recenter}
         >
           {({ pressed }) => (
-            <ImageBackground
-              source={buttons.circle.blanco[locating ? 'disabled' : pressed ? 'pressed' : 'normal']}
-              resizeMode="stretch"
-              style={local.recenterImage}
-            >
+            <PixelBox pressed={pressed && !locating} backgroundColor={locating ? palette.linea : palette.blanco} style={local.recenterBox}>
               {locating
-                ? <ActivityIndicator color={colors.accent} />
-                : <Image source={icons.extras.gps} style={local.recenterIcon} resizeMode="contain" />}
-            </ImageBackground>
+                ? <PixelSpinner accessibilityLabel="Buscando tu ubicación" size={8} />
+                : <Icon source={icons.extras.gps} size={24} />}
+            </PixelBox>
           )}
         </Pressable>
       ) : null}
@@ -600,52 +594,54 @@ export default function MapScreen({ active = true }) {
       ) : null}
 
       {selectedSighting ? (
-        <View style={local.sightingCard}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Cerrar información del avistamiento"
-            onPress={() => setSelectedSighting(null)}
-            style={local.closeButton}
-          >
-            <Text style={local.closeText}>X</Text>
-          </Pressable>
-
-          <Text style={local.sightingTitle}>
-            {selectedSighting.species?.commonName ?? 'Especie desconocida'}
-          </Text>
-
-          <Text style={local.sightingTime}>
-            {elapsedSince(selectedSighting.seenAt)}
-          </Text>
-
-          <View style={local.sightingPhotoFrame}>
-            {photoLoading ? (
-              <ActivityIndicator color={palette.azul} />
-            ) : selectedPhoto ? (
-              <AuthImage
-                source={photoSource(selectedPhoto)}
-                style={local.sightingPhoto}
-                resizeMode="cover"
-              />
-            ) : (
-              <Text style={local.unknownSpecies}>?</Text>
-            )}
+        <Panel outerStyle={local.sightingCardOuter} style={local.sightingCard}>
+          <View style={local.sightingHeader}>
+            <Text style={local.sightingTitle} numberOfLines={2}>
+              {selectedSighting.species?.commonName ?? 'Especie desconocida'}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar información del avistamiento"
+              hitSlop={8}
+              onPress={() => setSelectedSighting(null)}
+            >
+              {({ pressed }) => (
+                <PixelBox pressed={pressed} backgroundColor={palette.rosa} style={local.closeBox}>
+                  <Icon source={icons.extras.close} size={16} />
+                </PixelBox>
+              )}
+            </Pressable>
           </View>
 
-          {photoError ? (
-            <Text style={local.sightingInfo} accessibilityRole="alert">
-              {photoError}
-            </Text>
-          ) : (
-            <Text style={local.sightingInfo}>
-              {photoLoading
-                ? 'Buscando en tu colección...'
-                : selectedPhoto
-                  ? 'Especie registrada en tu colección'
-                  : 'Todavía no capturaste esta especie'}
-            </Text>
-          )}
-        </View>
+          <View style={local.sightingBody}>
+            <View style={local.sightingPhotoFrame}>
+              {photoLoading ? (
+                <PixelSpinner accessibilityLabel="Buscando foto" size={8} />
+              ) : selectedPhoto ? (
+                <AuthImage
+                  source={photoSource(selectedPhoto)}
+                  style={local.sightingPhoto}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Icon source={icons.extras.question} size={24} />
+              )}
+            </View>
+
+            <View style={local.sightingDetails}>
+              <Text style={local.sightingTime}>{elapsedSince(selectedSighting.seenAt)}</Text>
+              {photoError ? (
+                <Text style={local.sightingInfo} accessibilityRole="alert">{photoError}</Text>
+              ) : photoLoading ? (
+                <Text style={local.sightingInfo}>Buscando en tu colección...</Text>
+              ) : selectedPhoto ? (
+                <Chip label="EN TU COLECCIÓN" color={palette.verde} />
+              ) : (
+                <Chip label="SIN CAPTURAR" color={palette.amarillo} />
+              )}
+            </View>
+          </View>
+        </Panel>
       ) : null}
     </View>
   );
@@ -654,157 +650,59 @@ export default function MapScreen({ active = true }) {
 const local = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.fondo },
   mapLoading: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
-  card: {
-    position: 'absolute', top: 16, left: 16, right: 16, padding: 16, gap: 12,
-    backgroundColor: palette.fondo, borderWidth: 3, borderColor: palette.tinta, borderRadius: 4,
-  },
-  cardText: { fontFamily: fonts.body, fontSize: 20, lineHeight: 22, color: palette.tinta, textAlign: 'center' },
-  recenter: { position: 'absolute', right: 16, bottom: 16 },
-  recenterImage: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center', paddingBottom: 3 },
-  recenterIcon: { width: 24, height: 24 },
+  card: { position: 'absolute', top: spacing.lg, left: spacing.lg, right: spacing.lg },
+  cardFace: { padding: spacing.lg, gap: spacing.md, backgroundColor: palette.fondo },
+  cardText: { ...type.body, color: palette.tinta, textAlign: 'center' },
+  recenter: { position: 'absolute', right: spacing.lg, bottom: spacing.lg },
+  recenterBox: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
   devToggle: {
-    position: 'absolute', right: 16, bottom: 84, width: 56, height: 56, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: palette.fondo, borderWidth: 3, borderColor: palette.tinta, borderRadius: 4,
+    position: 'absolute', right: spacing.lg, bottom: 84, width: 56, height: 56, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: palette.fondo, borderWidth: border.width, borderColor: border.color, borderRadius: 0,
   },
   devToggleOn: { backgroundColor: palette.tinta },
-  devToggleText: { fontFamily: fonts.body, fontSize: 24, color: palette.tinta },
+  devToggleText: { ...type.subtitle, color: palette.tinta },
   devToggleTextOn: { color: palette.fondo },
   devPanel: {
-    position: 'absolute', left: 16, right: 84, bottom: 16, padding: 8, gap: 2,
-    backgroundColor: palette.fondo, borderWidth: 3, borderColor: palette.tinta, borderRadius: 4,
+    position: 'absolute', left: spacing.lg, right: 84, bottom: spacing.lg, padding: spacing.sm, gap: 2,
+    backgroundColor: palette.fondo, borderWidth: border.width, borderColor: border.color, borderRadius: 0,
   },
-  devText: { fontFamily: fonts.body, fontSize: 16, lineHeight: 18, color: palette.tinta },
-  devError: { fontFamily: fonts.body, fontSize: 16, lineHeight: 18, color: '#B00020' },
+  devText: { ...type.caption, color: palette.tinta },
+  devError: { ...type.caption, color: palette.rosa },
 
-  refreshButton: {
-    position: 'absolute',
-    top: 72,
-    right: 16,
-    width: 48,
-    height: 48,
-    backgroundColor: palette.blanco,
-    borderWidth: 3,
-    borderBottomWidth: 6,
-    borderColor: palette.tinta,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  refreshButton: { position: 'absolute', top: spacing.lg, right: spacing.lg },
 
-  refreshPressed: {
-    transform: [{ translateY: 4 }],
-    borderBottomWidth: 3,
-  },
+  mapErrorBox: { position: 'absolute', top: 72, left: spacing.lg, right: spacing.lg },
+  mapErrorFace: { padding: spacing.sm, borderColor: palette.rosa },
+  mapErrorText: { ...type.caption, color: palette.rosa, textAlign: 'center' },
 
-  refreshText: {
-    fontFamily: fonts.body,
-    fontSize: 36,
-    color: palette.azul,
-    lineHeight: 40,
-  },
-
-  mapErrorBox: {
-    position: 'absolute',
-    top: 128,
-    left: 16,
-    right: 16,
-    backgroundColor: palette.blanco,
-    borderWidth: 3,
-    borderColor: palette.rosa,
-    borderRadius: 4,
-    padding: 8,
-  },
-
-  mapErrorText: {
-    fontFamily: fonts.body,
-    fontSize: 18,
-    color: palette.rosa,
-    textAlign: 'center',
-  },
-
+  // El PNG es 32x19 celdas pixel: 40x24 dp
   sightingMarkerImage: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 24,
   },
 
-  sightingCard: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 150,
-    backgroundColor: palette.fondo,
-    borderWidth: 4,
-    borderBottomWidth: 8,
-    borderColor: palette.tinta,
-    borderRadius: 4,
-    padding: 16,
-    alignItems: 'center',
-    gap: 8,
-  },
-
-  closeButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 32,
-    height: 32,
-    backgroundColor: palette.rosa,
-    borderWidth: 2,
-    borderColor: palette.tinta,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-
-  closeText: {
-    fontFamily: fonts.display,
-    fontSize: 12,
-    color: palette.blanco,
-  },
-
-  sightingTitle: {
-    fontFamily: fonts.display,
-    fontSize: 13,
-    color: palette.tinta,
-    textAlign: 'center',
-    marginRight: 20,
-    marginLeft: 20,
-    marginTop: 8,
-  },
-
-  sightingTime: {
-    fontFamily: fonts.body,
-    fontSize: 22,
-    color: palette.azul,
-  },
-
+  sightingCardOuter: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: 150 },
+  sightingCard: { backgroundColor: palette.blanco, padding: spacing.md, gap: spacing.md },
+  sightingHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  sightingTitle: { ...type.heading, flex: 1, color: palette.tinta },
+  closeBox: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  sightingBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   sightingPhotoFrame: {
-    width: 110,
-    height: 110,
-    backgroundColor: palette.blanco,
-    borderWidth: 3,
-    borderColor: palette.tinta,
-    borderRadius: 4,
+    width: 80,
+    height: 80,
+    backgroundColor: palette.linea,
+    borderWidth: border.width,
+    borderColor: border.color,
+    borderRadius: 0,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   sightingPhoto: {
     width: '100%',
     height: '100%',
   },
-
-  unknownSpecies: {
-    fontFamily: fonts.display,
-    fontSize: 48,
-    color: palette.tinta,
-  },
-
-  sightingInfo: {
-    fontFamily: fonts.body,
-    fontSize: 18,
-    color: palette.tinta,
-    textAlign: 'center',
-  },
+  sightingDetails: { flex: 1, gap: spacing.sm, alignItems: 'flex-start' },
+  sightingTime: { ...type.subtitle, color: palette.azul },
+  sightingInfo: { ...type.caption, color: palette.tinta },
 });

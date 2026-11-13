@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import './src/tasks/locationTask'; // registra la tarea de ubicación en segundo plano al cargar la app
-import styles, { colors, fontSources } from './src/styles';
+import styles, { fontSources } from './src/styles';
+import PixelSpinner from './src/components/PixelSpinner';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
@@ -25,7 +26,7 @@ export default function App() {
 function Loading({ label }) {
   return (
     <View style={[styles.screen, styles.content]}>
-      <ActivityIndicator accessibilityLabel={label} color={colors.accent} />
+      <PixelSpinner accessibilityLabel={label} />
     </View>
   );
 }

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import AuthButton from './AuthButton';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Button from './Button';
 import AuthLayout from './AuthLayout';
+import TextField from './TextField';
+import { BackButton } from './ScreenHeader';
 import useAuth from '../hooks/useAuth';
-import { fonts, icons, palette } from '../styles';
-
-const backArrow = icons.arrows.arrowLeft;
+import { palette, spacing, type } from '../styles';
 
 export default function EmailVerificationForm({ pending, purpose, onBack }) {
   const {
@@ -69,10 +69,9 @@ export default function EmailVerificationForm({ pending, purpose, onBack }) {
 
   return (
     <AuthLayout contentStyle={styles.content}>
-      <Pressable accessibilityLabel="Volver" accessibilityRole="button" disabled={submitting} onPress={onBack} style={styles.back}>
-        <Image source={backArrow} style={styles.backIcon} />
-        <Text style={styles.backText}>VOLVER</Text>
-      </Pressable>
+      <View style={styles.back}>
+        <BackButton disabled={submitting} onPress={onBack} />
+      </View>
 
       <View style={styles.heading}>
         <Text style={styles.title}>{isLogin ? 'CONFIRMÁ TU INICIO' : 'REVISÁ TU CORREO'}</Text>
@@ -83,24 +82,23 @@ export default function EmailVerificationForm({ pending, purpose, onBack }) {
       </View>
 
       <View style={styles.form}>
-        <Text style={styles.fieldLabel}>CÓDIGO DE VERIFICACIÓN</Text>
-        <TextInput
-          accessibilityLabel="Código de verificación"
+        <TextField
+          label="CÓDIGO DE VERIFICACIÓN"
+          labelStyle={styles.fieldLabel}
           autoCapitalize="characters"
           autoComplete="one-time-code"
-          autoCorrect={false}
           keyboardType="default"
           maxLength={6}
           onChangeText={changeCode}
           placeholder="A7K3PX"
-          placeholderTextColor={palette.azul}
-          selectionColor={palette.azul}
           style={styles.codeInput}
           value={code}
+          returnKeyType="done"
+          onSubmitEditing={verify}
         />
         {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
         {info ? <Text accessibilityRole="status" style={styles.info}>{info}</Text> : null}
-        <AuthButton label={submitting ? 'CARGANDO...' : 'VERIFICAR'} disabled={submitting} onPress={verify} />
+        <Button label={submitting ? 'CARGANDO...' : 'VERIFICAR'} disabled={submitting} onPress={verify} />
         <Pressable
           accessibilityRole="button"
           disabled={submitting || cooldown > 0}
@@ -117,32 +115,18 @@ export default function EmailVerificationForm({ pending, purpose, onBack }) {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingTop: 6 },
-  back: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingVertical: 8, paddingRight: 12 },
-  backIcon: { width: 25, height: 25, resizeMode: 'contain' },
-  backText: { fontFamily: fonts.body, fontSize: 20, color: palette.azul, marginLeft: 4 },
-  heading: { alignItems: 'center', marginTop: 60, marginBottom: 32, gap: 12 },
-  title: { fontFamily: fonts.display, fontSize: 13, lineHeight: 20, color: palette.tinta, textAlign: 'center' },
-  subtitle: { fontFamily: fonts.body, fontSize: 22, color: palette.azul, textAlign: 'center', maxWidth: 360 },
-  expiration: { fontFamily: fonts.body, fontSize: 20, color: palette.tinta, textAlign: 'center' },
-  form: { width: '100%', maxWidth: 360, alignSelf: 'center', gap: 14 },
-  fieldLabel: { fontFamily: fonts.display, fontSize: 9, lineHeight: 15, color: palette.tinta, textAlign: 'center' },
-  codeInput: {
-    height: 64,
-    borderWidth: 3,
-    borderRadius: 9,
-    borderColor: palette.tinta,
-    backgroundColor: palette.blanco,
-    color: palette.tinta,
-    paddingHorizontal: 13,
-    fontFamily: fonts.display,
-    fontSize: 24,
-    letterSpacing: 8,
-    textAlign: 'center',
-  },
-  error: { fontFamily: fonts.body, fontSize: 19, color: palette.rosa, textAlign: 'center' },
-  info: { fontFamily: fonts.body, fontSize: 19, color: palette.verde || palette.azul, textAlign: 'center' },
-  resend: { alignSelf: 'center', padding: 10 },
-  resendText: { fontFamily: fonts.body, fontSize: 20, color: palette.azul, textAlign: 'center' },
+  content: { paddingTop: spacing.md },
+  back: { alignSelf: 'flex-start' },
+  heading: { alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.xl, gap: spacing.md },
+  title: { ...type.title, color: palette.tinta, textAlign: 'center' },
+  subtitle: { ...type.subtitle, color: palette.azul, textAlign: 'center', maxWidth: 360 },
+  expiration: { ...type.body, color: palette.tinta, textAlign: 'center' },
+  form: { width: '100%', maxWidth: 360, alignSelf: 'center', gap: spacing.lg },
+  fieldLabel: { textAlign: 'center' },
+  codeInput: { ...type.display, minHeight: 64, letterSpacing: 8, textAlign: 'center' },
+  error: { ...type.error, textAlign: 'center' },
+  info: { ...type.body, color: palette.verde, textAlign: 'center' },
+  resend: { alignSelf: 'center', padding: spacing.md },
+  resendText: { ...type.body, color: palette.azul, textAlign: 'center' },
   disabledText: { opacity: 0.5 },
 });

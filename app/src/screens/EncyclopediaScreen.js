@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
-import AuthButton from '../components/AuthButton';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import Button from '../components/Button';
+import Icon from '../components/Icon';
+import PixelBox from '../components/PixelBox';
+import PixelSpinner from '../components/PixelSpinner';
 import CaptureTile from '../components/CaptureTile';
 import FilterBar from '../components/FilterBar';
 import SpeciesDetailScreen from './SpeciesDetailScreen';
 import { getMyCaptures } from '../services/captures.service';
-import { colors, fonts, icons, palette } from '../styles';
+import { icons, palette, spacing, type } from '../styles';
 
 const PAGE_SIZE = 20;
 const FIRST_YEAR = 2026;
@@ -87,10 +90,10 @@ export default function EncyclopediaScreen() {
       <View style={local.header}>
         <Text accessibilityRole="header" style={local.title}>COLECCIÓN</Text>
         {meta ? (
-          <View style={local.counter} accessibilityLabel={`${meta.progress.captured} de ${meta.progress.total} especies capturadas`}>
-            <Image source={icons.panel.paw} style={local.counterIcon} resizeMode="contain" />
+          <PixelBox shadowOffset={2} style={local.counter} accessibilityLabel={`${meta.progress.captured} de ${meta.progress.total} especies capturadas`}>
+            <Icon source={icons.panel.paw} size={24} />
             <Text style={local.counterText}>{meta.progress.captured}/{meta.progress.total}</Text>
-          </View>
+          </PixelBox>
         ) : null}
       </View>
 
@@ -106,11 +109,11 @@ export default function EncyclopediaScreen() {
       />
 
       {loading ? (
-        <ActivityIndicator accessibilityLabel="Cargando capturas" color={colors.accent} style={local.loader} />
+        <PixelSpinner accessibilityLabel="Cargando capturas" style={local.loader} />
       ) : error && captures.length === 0 ? (
         <View style={local.empty}>
           <Text accessibilityRole="alert" style={local.message}>{error.message}</Text>
-          <AuthButton label="REINTENTAR" onPress={() => load(1)} />
+          <Button label="REINTENTAR" onPress={() => load(1)} />
         </View>
       ) : (
         <FlatList
@@ -123,7 +126,7 @@ export default function EncyclopediaScreen() {
           onEndReachedThreshold={0.4}
           onEndReached={() => hasMore && !loadingMore && load(meta.page + 1)}
           ListEmptyComponent={<Text style={local.message}>No hay capturas con estos filtros.</Text>}
-          ListFooterComponent={loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
+          ListFooterComponent={loadingMore ? <PixelSpinner accessibilityLabel="Cargando más capturas" /> : null}
           contentContainerStyle={local.grid}
         />
       )}
@@ -132,14 +135,13 @@ export default function EncyclopediaScreen() {
 }
 
 const local = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.fondo, padding: 12 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  title: { fontFamily: fonts.display, fontSize: 16, color: palette.tinta },
-  counter: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: palette.blanco, borderWidth: 3, borderColor: palette.tinta, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 },
-  counterIcon: { width: 20, height: 20 },
-  counterText: { fontFamily: fonts.display, fontSize: 10, color: palette.tinta },
-  grid: { paddingTop: 10, paddingBottom: 12 },
-  loader: { marginTop: 32 },
-  empty: { flex: 1, justifyContent: 'center', gap: 12 },
-  message: { fontFamily: fonts.body, fontSize: 22, lineHeight: 26, color: palette.azul, textAlign: 'center', marginTop: 16 },
+  container: { flex: 1, backgroundColor: palette.fondo, padding: spacing.lg },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
+  title: { ...type.title, color: palette.tinta },
+  counter: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  counterText: { ...type.labelLg, color: palette.tinta },
+  grid: { paddingTop: spacing.sm, paddingBottom: spacing.md },
+  loader: { marginTop: spacing.xl * 1.5 },
+  empty: { flex: 1, justifyContent: 'center', gap: spacing.md },
+  message: { ...type.body, lineHeight: 26, color: palette.azul, textAlign: 'center', marginTop: spacing.lg },
 });

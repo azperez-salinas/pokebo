@@ -7,10 +7,11 @@ import CameraScreen from '../screens/CameraScreen';
 import AchievementsScreen from '../screens/AchievementsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import PixelIcon from '../components/PixelIcon';
-import NotificationBell from '../components/NotificationBell';
+import AppHeader from '../components/AppHeader';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import { NotificationsProvider } from '../store/notificationsStore';
-import styles from '../styles';
+import PixelBox from '../components/PixelBox';
+import styles, { colors } from '../styles';
 
 const tabs = [
   { id: 'map', label: 'Mapa', Screen: MapScreen },
@@ -36,6 +37,7 @@ export default function MainNavigation({ session, onUserUpdated, onLogout }) {
   return (
     <NotificationsProvider>
       <SafeAreaView style={styles.screen}>
+        {inboxOpen ? null : <AppHeader onOpenInbox={() => setInboxOpen(true)} />}
         <View style={mapVisible ? local.mapShown : local.mapHidden}>
           <MapScreen active={mapVisible} />
         </View>
@@ -46,9 +48,6 @@ export default function MainNavigation({ session, onUserUpdated, onLogout }) {
             {activeTab !== 'map' ? (
               <Screen session={session} onUserUpdated={onUserUpdated} onLogout={onLogout} onNavigate={goToTab} />
             ) : null}
-            <View pointerEvents="box-none" style={local.bell}>
-              <NotificationBell onPress={() => setInboxOpen(true)} />
-            </View>
           </>
         )}
         <View style={styles.tabBar}>
@@ -62,16 +61,27 @@ export default function MainNavigation({ session, onUserUpdated, onLogout }) {
                 accessibilityLabel={label}
                 accessibilityState={{ selected }}
                 onPress={() => goToTab(id)}
-                style={({ pressed }) => [
-                  camera ? styles.cameraTab : styles.tab,
-                  selected && !camera && styles.selectedTab,
-                  pressed && styles.pressed,
-                ]}
+                style={[styles.tab, selected && !camera && styles.selectedTab]}
               >
-                <View style={camera && [styles.cameraButton, selected && styles.selectedCamera]}>
-                  <PixelIcon name={id} />
-                </View>
-                {!camera && <Text style={[styles.tabLabel, selected && styles.selectedLabel]}>{label.toUpperCase()}</Text>}
+                {({ pressed }) => (
+                  <>
+                    <View style={styles.iconSlot}>
+                      {camera ? (
+                        <PixelBox
+                          pressed={pressed}
+                          backgroundColor={colors.camera}
+                          outerStyle={styles.cameraButtonOuter}
+                          style={[styles.cameraButton, selected && styles.selectedCamera]}
+                        >
+                          <PixelIcon name={id} />
+                        </PixelBox>
+                      ) : (
+                        <PixelIcon name={id} />
+                      )}
+                    </View>
+                    {!camera && <Text style={[styles.tabLabel, selected && styles.selectedLabel]}>{label.toUpperCase()}</Text>}
+                  </>
+                )}
               </Pressable>
             );
           })}
@@ -82,7 +92,6 @@ export default function MainNavigation({ session, onUserUpdated, onLogout }) {
 }
 
 const local = StyleSheet.create({
-  bell: { position: 'absolute', top: 12, right: 16 },
   mapShown: { flex: 1 },
   mapHidden: { display: 'none' },
 });

@@ -23,7 +23,6 @@ const local = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: palette.blanco,
-    borderTopWidth: border.width,
     borderBottomWidth: border.width,
     borderColor: border.color,
     paddingHorizontal: spacing.lg,

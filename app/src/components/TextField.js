@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { palette, border, spacing, type } from '../styles';
+import { useScrollIntoView } from './KeyboardAwareScroll';
 
 // Campo de texto único: etiqueta en PressStart2P, entrada en VT323, borde que se vuelve azul con el foco.
 // Reemplaza a los `Field` de AuthForm, ChangePasswordForm y ProfileForm. Acepta cualquier prop de TextInput.
-export default function TextField({ label, value, onChangeText, error, multiline = false, counter, style, containerStyle, labelStyle, ...props }) {
+export default function TextField({ label, value, onChangeText, error, multiline = false, counter, style, containerStyle, labelStyle, onFocus, onBlur, ...props }) {
   const [focused, setFocused] = useState(false);
+  const fieldRef = useRef(null);
+  const scrollIntoView = useScrollIntoView(); // dentro de KeyboardAwareScroll deja el campo a la vista al enfocarlo
   return (
-    <View style={[local.field, containerStyle]}>
+    <View ref={fieldRef} collapsable={false} style={[local.field, containerStyle]}>
       {label ? <Text style={[type.label, local.label, labelStyle]}>{label}</Text> : null}
       <TextInput
         accessibilityLabel={label}
@@ -18,8 +21,8 @@ export default function TextField({ label, value, onChangeText, error, multiline
         multiline={multiline}
         value={value}
         onChangeText={onChangeText}
-        onFocus={(event) => { setFocused(true); props.onFocus?.(event); }}
-        onBlur={(event) => { setFocused(false); props.onBlur?.(event); }}
+        onFocus={(event) => { setFocused(true); scrollIntoView?.(fieldRef.current); onFocus?.(event); }}
+        onBlur={(event) => { setFocused(false); onBlur?.(event); }}
         {...props}
         style={[local.input, multiline && local.multiline, focused && local.focused, error && local.invalid, style]}
       />

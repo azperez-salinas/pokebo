@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import useAuth from '../hooks/useAuth';
 import { disableNearbyAlerts, enableNearbyAlerts } from '../services/nearbyAlerts.service';
-import { fonts, palette } from '../styles';
+import PixelBox from './PixelBox';
+import { palette, spacing, type } from '../styles';
 
 const ERRORS = {
   FOREGROUND_DENIED: 'Necesitamos el permiso de ubicación para avisarte. Habilitalo en los ajustes del teléfono.',
@@ -41,7 +42,9 @@ export default function NearbyAlertsToggle() {
         style={styles.row}
       >
         <Text style={styles.label}>AVISOS DE CERCANÍA</Text>
-        <Text style={[styles.state, enabled && styles.stateOn]}>{pending ? '...' : enabled ? 'SÍ' : 'NO'}</Text>
+        <PixelBox shadowOffset={2} backgroundColor={enabled ? palette.verde : palette.linea} style={styles.state}>
+          <Text style={styles.stateText}>{pending ? '...' : enabled ? 'SÍ' : 'NO'}</Text>
+        </PixelBox>
       </Pressable>
       <Text style={styles.hint}>
         Te avisamos sobre nuevos avistamientos cercanos mientras usás la app.
@@ -52,11 +55,11 @@ export default function NearbyAlertsToggle() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingVertical: 8, gap: 4 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
-  label: { fontFamily: fonts.body, fontSize: 22, color: palette.tinta },
-  state: { fontFamily: fonts.body, fontSize: 22, color: palette.linea },
-  stateOn: { color: palette.azul },
-  hint: { fontFamily: fonts.body, fontSize: 16, lineHeight: 18, color: palette.tinta },
-  error: { fontFamily: fonts.body, fontSize: 17, lineHeight: 19, color: palette.rosa },
+  container: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, gap: spacing.xs },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.sm },
+  label: { ...type.body, color: palette.tinta },
+  state: { minWidth: 52, alignItems: 'center', paddingVertical: spacing.xs, paddingHorizontal: spacing.sm },
+  stateText: { ...type.labelLg, color: palette.tinta },
+  hint: { ...type.caption, color: palette.tinta },
+  error: { ...type.error },
 });

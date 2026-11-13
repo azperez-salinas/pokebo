@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import AuthButton from '../components/AuthButton';
+import { StyleSheet, Text, View } from 'react-native';
+import Button from '../components/Button';
+import KeyboardAwareScroll from '../components/KeyboardAwareScroll';
+import PixelSpinner from '../components/PixelSpinner';
+import ScreenHeader from '../components/ScreenHeader';
 import ProfileForm from '../components/ProfileForm';
 import ChangePasswordForm from '../components/ChangePasswordForm';
-import { palette, fonts } from '../styles';
+import { palette, spacing, type } from '../styles';
 import { getMe } from '../services/users.service';
 import useAuth from '../hooks/useAuth';
 import { getSession } from '../services/session';
 
-export default function ProfileScreen() {
+// `footer` se muestra al final del scroll (Ajustes agrega ahí los avisos y cerrar sesión).
+export default function ProfileScreen({ footer = null }) {
   const { status } = useAuth();
 
   const [user, setUser] = useState(null);
@@ -57,19 +61,18 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={palette.azul} />
+        <PixelSpinner accessibilityLabel="Cargando perfil" />
         <Text style={styles.body}>Cargando perfil...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView
+    <KeyboardAwareScroll
       style={styles.container}
       contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.title}>MI PERFIL</Text>
+      <ScreenHeader title="MI PERFIL" />
 
       {error ? (
         <Text accessibilityRole="alert" style={styles.error}>
@@ -91,8 +94,8 @@ export default function ProfileScreen() {
       )}
 
       {user && (
-        <AuthButton
-          color="yellow"
+        <Button
+          color="amarillo"
           label={
             showPasswordForm
               ? 'VOLVER AL PERFIL'
@@ -103,15 +106,15 @@ export default function ProfileScreen() {
           }
         />
       )}
-    </ScrollView>
+      {footer}
+    </KeyboardAwareScroll>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.fondo },
-  content: { padding: 18, paddingBottom: 40, gap: 16 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontFamily: fonts.display, fontSize: 16, lineHeight: 25, color: palette.azul, textAlign: 'center' },
-  body: { fontFamily: fonts.body, fontSize: 23, color: palette.tinta },
-  error: { fontFamily: fonts.body, fontSize: 22, color: palette.rosa, textAlign: 'center' },
+  container: { backgroundColor: palette.fondo },
+  content: { padding: spacing.lg, paddingBottom: spacing.xl * 1.5, gap: spacing.lg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.md, backgroundColor: palette.fondo },
+  body: { ...type.subtitle, color: palette.tinta },
+  error: { ...type.error, textAlign: 'center' },
 });

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import AuthButton from './AuthButton';
-import { palette, fonts } from '../styles';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import Button from './Button';
+import Panel from './Panel';
+import PixelBox from './PixelBox';
+import TextField from './TextField';
+import { palette, border, spacing, type } from '../styles';
 import { updateMe } from '../services/users.service';
 
 import { AVATARS, AVATAR_IMAGES } from '../config/avatars';
@@ -58,26 +61,20 @@ export default function ProfileForm({ user, onUserUpdated }) {
   }
 
   return (
-    <View style={styles.panel}>
-      <View
-      style={styles.currentAvatar}
-      accessibilityLabel={`Avatar actual: ${original.avatar ?? 'avatar_1'}`}>
+    <Panel style={styles.panel}>
+      <PixelBox
+        outerStyle={styles.currentAvatarOuter}
+        style={styles.currentAvatar}
+        backgroundColor={palette.cielo}
+        accessibilityLabel={`Avatar actual: ${original.avatar ?? 'avatar_1'}`}
+      >
         <Image source={AVATAR_IMAGES[original.avatar] ?? AVATAR_IMAGES.avatar_1}
           style={styles.avatarImage} resizeMode="cover" />
-      </View>
+      </PixelBox>
       <Text style={styles.body}>Explorador: {original.username}</Text>
-      <View style={styles.field}>
-        <Text style={styles.label}>USUARIO</Text>
-        <TextInput accessibilityLabel="Usuario" style={styles.input} value={username}
-          onChangeText={setUsername} editable={!saving} autoCapitalize="none" autoCorrect={false} />
-      </View>
-      <View style={styles.field}>
-        <Text style={styles.label}>BIOGRAFÍA</Text>
-        <TextInput accessibilityLabel="Biografía" style={[styles.input, styles.multiline]}
-          value={bio} onChangeText={setBio} editable={!saving} multiline maxLength={150}
-          placeholder="Contá algo sobre vos..." placeholderTextColor={palette.azul} />
-        <Text style={styles.counter}>{bio.length}/150</Text>
-      </View>
+      <TextField label="USUARIO" value={username} onChangeText={setUsername} editable={!saving} />
+      <TextField label="BIOGRAFÍA" value={bio} onChangeText={setBio} editable={!saving} multiline maxLength={150}
+        placeholder="Contá algo sobre vos..." counter={`${bio.length}/150`} autoCapitalize="sentences" />
       <Text style={styles.label}>ELEGÍ TU AVATAR</Text>
       <View style={styles.avatars} accessibilityRole="radiogroup">
         {AVATARS.map((item, index) => (
@@ -90,40 +87,21 @@ export default function ProfileForm({ user, onUserUpdated }) {
       </View>
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
       {message ? <Text accessibilityRole="alert" style={styles.success}>{message}</Text> : null}
-      <AuthButton label={saving ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'} disabled={saving} onPress={save} />
-    </View>
+      <Button label={saving ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'} disabled={saving} onPress={save} />
+    </Panel>
   );
 }
 
 const styles = StyleSheet.create({
-  panel: { backgroundColor: palette.blanco, borderColor: palette.tinta, borderWidth: 4, borderRadius: 6, padding: 16, gap: 14 },
-  body: { fontFamily: fonts.body, fontSize: 23, color: palette.tinta },
-  field: { gap: 7 },
-  label: { fontFamily: fonts.display, fontSize: 9, lineHeight: 16, color: palette.tinta },
-  input: { borderWidth: 3, borderColor: palette.tinta, borderRadius: 5, backgroundColor: palette.fondo, padding: 10, fontFamily: fonts.body, fontSize: 23, color: palette.tinta },
-  multiline: { minHeight: 95, textAlignVertical: 'top' },
-  counter: { fontFamily: fonts.display, fontSize: 9, color: palette.azul, textAlign: 'right' },
-  avatars: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  avatar: { width: 52, height: 52, backgroundColor: palette.linea, borderColor: palette.tinta, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
-  avatarSelected: { backgroundColor: palette.cielo, borderColor: palette.azul, borderWidth: 4 },
+  panel: { padding: spacing.lg, gap: spacing.lg },
+  body: { ...type.subtitle, color: palette.tinta },
+  label: { ...type.label, color: palette.tinta },
+  avatars: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 1 },
+  avatar: { width: 52, height: 52, backgroundColor: palette.linea, borderColor: palette.tinta, borderWidth: border.width, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
+  avatarSelected: { backgroundColor: palette.cielo, borderColor: palette.azul },
   avatarImage: { width: '100%', height: '100%' },
-  currentAvatar: {
-  width: 100,
-  height: 100,
-  alignSelf: 'center',
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: palette.cielo,
-  borderColor: palette.tinta,
-  borderWidth: 4,
-  borderRadius: 6,
-  borderBottomWidth: 8,
-  },
-  currentAvatarText: {
-    fontFamily: fonts.display,
-    fontSize: 32,
-    color: palette.azul,
-  },
-  error: { fontFamily: fonts.body, fontSize: 22, color: palette.rosa, textAlign: 'center' },
-  success: { fontFamily: fonts.body, fontSize: 22, color: palette.verde, textAlign: 'center' },
+  currentAvatarOuter: { alignSelf: 'center' },
+  currentAvatar: { width: 100, height: 100, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  error: { ...type.error, textAlign: 'center' },
+  success: { ...type.body, color: palette.verde, textAlign: 'center' },
 });

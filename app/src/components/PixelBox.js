@@ -5,10 +5,10 @@ import { palette, border, shadow } from '../styles';
 // Caja base de la estética pixel: esquinas rectas, borde de tinta y sombra dura abajo-derecha.
 // Con `pressed` la cara se desplaza sobre la sombra (efecto "botón que se hunde").
 // `style` se aplica a la cara; `outerStyle` al contenedor (ancho, márgenes, alineación).
-export default function PixelBox({ children, style, outerStyle, pressed = false, shadowOffset = shadow.offset, backgroundColor = palette.blanco }) {
+export default function PixelBox({ children, style, outerStyle, pressed = false, shadowOffset = shadow.offset, backgroundColor = palette.blanco, accessibilityLabel }) {
   const offset = shadowOffset;
   return (
-    <View style={[{ paddingRight: offset, paddingBottom: offset }, outerStyle]}>
+    <View accessible={Boolean(accessibilityLabel)} accessibilityLabel={accessibilityLabel} style={[{ paddingRight: offset, paddingBottom: offset }, outerStyle]}>
       {offset > 0 ? <View pointerEvents="none" style={[local.shadow, { top: offset, left: offset }]} /> : null}
       <View
         style={[

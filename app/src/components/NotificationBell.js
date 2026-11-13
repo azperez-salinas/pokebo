@@ -1,7 +1,9 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Icon from './Icon';
+import PixelBox from './PixelBox';
 import useNotifications from '../hooks/useNotifications';
-import { fonts, icons, palette } from '../styles';
+import { icons, palette, type } from '../styles';
 
 // Ícono del buzón (arriba a la derecha). onPress abre la pantalla de avisos.
 export default function NotificationBell({ onPress }) {
@@ -14,30 +16,27 @@ export default function NotificationBell({ onPress }) {
       accessibilityLabel={active ? `Avisos, ${unreadCount} sin leer` : 'Avisos'}
       hitSlop={10}
       onPress={onPress}
-      style={({ pressed }) => [local.button, active && local.buttonActive, pressed && local.pressed]}
     >
-      <Image accessible={false} source={icons.extras.inbox} style={local.icon} resizeMode="contain" />
-      {active ? (
-        <View style={local.badge}>
-          <Text style={local.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-        </View>
-      ) : null}
+      {({ pressed }) => (
+        <PixelBox pressed={pressed} shadowOffset={2} backgroundColor={active ? palette.amarillo : palette.fondo} style={local.button}>
+          <Icon source={icons.extras.inbox} size={24} />
+          {active ? (
+            <View style={local.badge}>
+              <Text style={local.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+            </View>
+          ) : null}
+        </PixelBox>
+      )}
     </Pressable>
   );
 }
 
 const local = StyleSheet.create({
-  button: {
-    width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: palette.fondo, borderWidth: 3, borderColor: palette.tinta, borderRadius: 4,
-  },
-  buttonActive: { backgroundColor: palette.amarillo },
-  pressed: { opacity: 0.7 },
-  icon: { width: 48, height: 48 },
+  button: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   badge: {
     position: 'absolute', top: -10, right: -10, minWidth: 22, height: 22, paddingHorizontal: 3,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: palette.rosa, borderWidth: 2, borderColor: palette.tinta, borderRadius: 11,
+    backgroundColor: palette.rosa, borderWidth: 2, borderColor: palette.tinta, borderRadius: 0,
   },
-  badgeText: { fontFamily: fonts.display, fontSize: 8, color: palette.blanco },
+  badgeText: { ...type.label, color: palette.blanco },
 });

@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Image, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { CameraView } from 'expo-camera';
-import AuthButton from '../components/AuthButton';
+import Button from '../components/Button';
+import Icon from '../components/Icon';
 import Panel from '../components/Panel';
+import PixelBox from '../components/PixelBox';
+import PixelSpinner from '../components/PixelSpinner';
 import CaptureResultScreen from './CaptureResultScreen';
 import { notifyUnlockedAchievements } from '../services/achievementAlerts';
 import { notifyInboxChanged } from '../store/notificationsStore';
 import useCamera from '../hooks/useCamera';
 import useLocation from '../hooks/useLocation';
 import { createCapture } from '../services/captures.service';
-import styles, { buttons, colors, fonts, icons, palette } from '../styles';
+import styles, { icons, palette, spacing, type } from '../styles';
 
-// La imagen del botón incluye la sombra de abajo: su cara queda ~6% más arriba del centro, y el ícono se sube lo mismo
-const ICON_OFFSET = 0.06;
-
-// Botón del boceto (circular o cuadrado) con un ícono encima
-function ControlButton({ background, icon, size, label, disabled, onPress }) {
+// Botón de captura: cuadrado con sombra dura (como el resto de los botones) y un ícono centrado
+function ControlButton({ icon, size, label, disabled, onPress }) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -25,13 +25,13 @@ function ControlButton({ background, icon, size, label, disabled, onPress }) {
       onPress={onPress}
     >
       {({ pressed }) => (
-        <ImageBackground
-          source={background[disabled ? 'disabled' : pressed ? 'pressed' : 'normal']}
-          resizeMode="stretch"
+        <PixelBox
+          pressed={pressed && !disabled}
+          backgroundColor={disabled ? palette.linea : palette.amarillo}
           style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Image source={icon} style={{ width: size * 0.55, height: size * 0.55, marginTop: -size * ICON_OFFSET }} resizeMode="contain" />
-        </ImageBackground>
+          <Icon source={icon} size={48} />
+        </PixelBox>
       )}
     </Pressable>
   );
@@ -77,7 +77,7 @@ export default function CameraScreen({ onNavigate }) {
   }
 
   if (!permission) {
-    return <View style={styles.content}><ActivityIndicator accessibilityLabel="Cargando cámara" color={colors.accent} /></View>;
+    return <View style={styles.content}><PixelSpinner accessibilityLabel="Cargando cámara" /></View>;
   }
 
   // Se explica para qué se usa la cámara antes de pedir el permiso
@@ -91,7 +91,7 @@ export default function CameraScreen({ onNavigate }) {
             : 'El permiso de cámara está desactivado. Habilitalo en los ajustes del teléfono para capturar.'}
         </Text>
         <View style={local.actions}>
-          <AuthButton label={permission.canAskAgain ? 'PERMITIR CÁMARA' : 'ABRIR AJUSTES'} onPress={askPermission} />
+          <Button label={permission.canAskAgain ? 'PERMITIR CÁMARA' : 'ABRIR AJUSTES'} onPress={askPermission} />
         </View>
       </View>
     );
@@ -121,12 +121,12 @@ export default function CameraScreen({ onNavigate }) {
 
       {sending ? (
         <View style={local.loader} pointerEvents="none">
-          <ActivityIndicator accessibilityLabel="Identificando animal" size="large" color={palette.blanco} />
+          <PixelSpinner accessibilityLabel="Identificando animal" size={16} />
         </View>
       ) : null}
 
       <View style={local.controls}>
-        <ControlButton background={buttons.circle.amarillo} icon={icons.pokeballs.pokebolaSinSombra} size={84} label="Sacar foto" disabled={sending || !ready} onPress={capture} />
+        <ControlButton icon={icons.pokeballs.pokebolaSinSombra} size={80} label="Sacar foto" disabled={sending || !ready} onPress={capture} />
       </View>
     </View>
   );
@@ -136,17 +136,16 @@ const CORNER = { width: 36, height: 36, borderColor: palette.azul, position: 'ab
 
 const local = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.tinta },
-  hint: { position: 'absolute', top: 16, left: 16, right: 16 },
-  hintTitle: { fontFamily: fonts.display, fontSize: 10, color: palette.azul },
-  hintText: { fontFamily: fonts.body, fontSize: 24, lineHeight: 26, color: palette.tinta, marginTop: 6 },
+  hint: { position: 'absolute', top: spacing.lg, left: spacing.lg, right: spacing.lg },
+  hintTitle: { ...type.labelLg, color: palette.azul },
+  hintText: { ...type.subtitle, color: palette.tinta, marginTop: spacing.sm },
   frame: { position: 'absolute', top: '28%', bottom: '28%', left: 32, right: 32 },
   corner: CORNER,
   topLeft: { top: 0, left: 0, borderTopWidth: 6, borderLeftWidth: 6 },
   topRight: { top: 0, right: 0, borderTopWidth: 6, borderRightWidth: 6 },
   bottomLeft: { bottom: 0, left: 0, borderBottomWidth: 6, borderLeftWidth: 6 },
   bottomRight: { bottom: 0, right: 0, borderBottomWidth: 6, borderRightWidth: 6 },
-  frameText: { position: 'absolute', bottom: '22%', left: 0, right: 0, textAlign: 'center', fontFamily: fonts.body, fontSize: 24, color: palette.blanco, textShadowColor: palette.tinta, textShadowRadius: 4 },
-  loader: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.25)' },
-  controls: { position: 'absolute', bottom: 24, left: 24, right: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  actions: { width: '100%', marginTop: 32 },
+  loader: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(20, 16, 10, 0.4)' },
+  controls: { position: 'absolute', bottom: spacing.xl, left: spacing.xl, right: spacing.xl, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  actions: { width: '100%', marginTop: spacing.xl },
 });

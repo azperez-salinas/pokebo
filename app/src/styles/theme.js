@@ -22,7 +22,10 @@ export const fontSize = {
 export const type = {
   title: { fontFamily: fonts.display, fontSize: fontSize.display.lg, lineHeight: 24 },
   subtitle: { fontFamily: fonts.body, fontSize: fontSize.body.bodyLg, lineHeight: 26 },
+  display: { fontFamily: fonts.display, fontSize: fontSize.display.xl, lineHeight: 32 },
+  heading: { fontFamily: fonts.display, fontSize: fontSize.display.md, lineHeight: 18 },
   label: { fontFamily: fonts.display, fontSize: fontSize.display.xs, lineHeight: 12 },
+  labelLg: { fontFamily: fonts.display, fontSize: fontSize.display.sm, lineHeight: 14 },
   button: { fontFamily: fonts.display, fontSize: fontSize.display.sm, lineHeight: 14 },
   input: { fontFamily: fonts.body, fontSize: fontSize.body.bodyLg, lineHeight: 26 },
   body: { fontFamily: fonts.body, fontSize: fontSize.body.body, lineHeight: 22 },

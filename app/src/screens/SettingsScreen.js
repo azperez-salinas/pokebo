@@ -1,8 +1,9 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import Button from '../components/Button';
 import ProfileScreen from './ProfileScreen';
 import NearbyAlertsToggle from '../components/NearbyAlertsToggle';
-import { palette, fonts } from '../styles';
+import { palette, spacing, type } from '../styles';
 
 export default function SettingsScreen({ onLogout }) {
   const [error, setError] = React.useState('');
@@ -20,21 +21,23 @@ export default function SettingsScreen({ onLogout }) {
     }
   }
 
+  // Avisos y cerrar sesión van dentro del scroll del perfil: así toda la pantalla se desplaza con el teclado abierto.
   return (
     <View style={styles.container}>
-      <ProfileScreen />
-      <NearbyAlertsToggle />
-      {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-      <Pressable accessibilityRole="button" disabled={pending} onPress={signOut} style={styles.button}>
-        <Text style={styles.label}>{pending ? 'CERRANDO...' : 'CERRAR SESIÓN'}</Text>
-      </Pressable>
+      <ProfileScreen
+        footer={(
+          <>
+            <NearbyAlertsToggle />
+            {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+            <Button color="destructive" label={pending ? 'CERRANDO...' : 'CERRAR SESIÓN'} disabled={pending} onPress={signOut} />
+          </>
+        )}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center' },
-  error: { fontFamily: fonts.body, fontSize: 19, color: palette.rosa, textAlign: 'center' },
-  button: { alignSelf: 'center', padding: 16 },
-  label: { fontFamily: fonts.body, fontSize: 22, color: palette.azul },
+  container: { flex: 1, backgroundColor: palette.fondo },
+  error: { ...type.error, textAlign: 'center', marginBottom: spacing.sm },
 });

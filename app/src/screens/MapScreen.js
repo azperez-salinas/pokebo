@@ -675,9 +675,10 @@ const local = StyleSheet.create({
   mapErrorFace: { padding: spacing.sm, borderColor: palette.rosa },
   mapErrorText: { ...type.caption, color: palette.rosa, textAlign: 'center' },
 
+  // El PNG es 32x19 celdas pixel: 64x38 dp = 2 dp por celda
   sightingMarkerImage: {
-    width: 50,
-    height: 50,
+    width: 64,
+    height: 38,
   },
 
   sightingCardOuter: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: 150 },

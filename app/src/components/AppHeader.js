@@ -29,6 +29,6 @@ const local = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   logo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  pokeball: { width: 40, height: 40, resizeMode: 'contain' },
+  pokeball: { width: 32, height: 32, resizeMode: 'contain' },
   brand: { ...type.title, color: palette.tinta },
 });

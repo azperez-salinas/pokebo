@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { CameraView } from 'expo-camera';
 import Button from '../components/Button';
-import Icon from '../components/Icon';
 import Panel from '../components/Panel';
 import PixelBox from '../components/PixelBox';
 import PixelSpinner from '../components/PixelSpinner';
@@ -30,7 +29,7 @@ function ControlButton({ icon, size, label, disabled, onPress }) {
           backgroundColor={disabled ? palette.linea : palette.amarillo}
           style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Icon source={icon} size={48} />
+          <Image source={icon} style={local.controlIcon} resizeMode="contain" />
         </PixelBox>
       )}
     </Pressable>
@@ -145,6 +144,7 @@ const local = StyleSheet.create({
   topRight: { top: 0, right: 0, borderTopWidth: 6, borderRightWidth: 6 },
   bottomLeft: { bottom: 0, left: 0, borderBottomWidth: 6, borderLeftWidth: 6 },
   bottomRight: { bottom: 0, right: 0, borderBottomWidth: 6, borderRightWidth: 6 },
+  controlIcon: { width: 64, height: 64 }, // pokébola de 32 celdas a 2 dp por celda
   loader: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(20, 16, 10, 0.4)' },
   controls: { position: 'absolute', bottom: spacing.xl, left: spacing.xl, right: spacing.xl, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   actions: { width: '100%', marginTop: spacing.xl },

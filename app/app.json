@@ -4,7 +4,11 @@
     "slug": "pokebo",
     "version": "0.1.0",
     "android": {
-      "package": "com.pokebo.app"
+      "package": "com.pokebo.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F3F5FB"
+      }
     },
     "plugins": [
       "expo-secure-store",
@@ -27,6 +31,8 @@
       ],
       "expo-notifications",
       "expo-font"
-    ]
+    ],
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light"
   }
 }

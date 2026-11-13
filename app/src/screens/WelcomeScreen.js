@@ -27,7 +27,7 @@ export default function WelcomeScreen({ onStart, onLogin }) {
 const styles = StyleSheet.create({
   content: { justifyContent: 'space-between' },
   hero: { alignItems: 'center', marginTop: spacing.xl * 2 },
-  pokeball: { width: 190, height: 190, resizeMode: 'contain', marginBottom: spacing.xs },
+  pokeball: { width: 192, height: 192, resizeMode: 'contain', marginBottom: spacing.xs },
   brand: { ...type.display, color: palette.tinta, textAlign: 'center' },
   tagline: { ...type.subtitle, color: palette.azul, textAlign: 'center', marginTop: spacing.lg },
   actions: { gap: spacing.md, paddingTop: spacing.xl },

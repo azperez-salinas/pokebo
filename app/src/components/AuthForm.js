@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   content: { paddingTop: spacing.md },
   back: { alignSelf: 'flex-start' },
   heading: { alignItems: 'center', marginTop: spacing.lg, marginBottom: spacing.xl },
-  pokeball: { width: 126, height: 126, resizeMode: 'contain' },
+  pokeball: { width: 128, height: 128, resizeMode: 'contain' },
   brand: { ...type.title, color: palette.tinta, marginTop: spacing.xs },
   title: { ...type.button, color: palette.tinta, textAlign: 'center', marginTop: spacing.xl },
   subtitle: { ...type.subtitle, color: palette.azul, textAlign: 'center', marginTop: spacing.sm },

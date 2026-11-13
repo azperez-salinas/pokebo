@@ -18,6 +18,7 @@ import { buttons, icons, images, palette, fonts } from '../styles';
 - `images/`: fondos y otras imágenes.
 - `fonts/`: nombres para `fontFamily` y el mapa `fontSources` que recibe `useFonts` al iniciar la app.
 - `palette.json`: valores de los colores. `colors.js` asigna roles como `background` y `accent` a esos colores.
+- `theme.js`: tokens de la estética pixel. `spacing` (escala de 4), `radius` (0: esquinas rectas), `border` (un solo grosor), `shadow` (sombra dura), `fontSize` (escala fija) y `type` (roles tipográficos: `title`, `subtitle`, `label`, `button`, `input`, `body`, `caption`, `error`). Usá `...type.title` en vez de `fontFamily`/`fontSize` sueltos, y `spacing.*` en vez de números.
 - `shared.js`: estilos compartidos, disponibles como la exportación por defecto.
 
-Para agregar un recurso, guardá el archivo en `assets` y agregá un `require` con ruta literal al módulo de su categoría. Expo necesita rutas estáticas para empaquetar los archivos. Los estilos específicos de cada pantalla permanecen junto a su componente.
+Para agregar un recurso, guardá el archivo en `assets` y agregá un `require` con ruta literal al módulo de su categoría. Expo necesita rutas estáticas para empaquetar los archivos. Los estilos específicos de cada pantalla permanecen junto a su componente, pero los valores de tipografía, espaciado, borde y color deben salir de `theme.js` y `palette.json`, no de números o hex sueltos.

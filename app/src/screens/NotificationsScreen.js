@@ -15,7 +15,7 @@ const FILTERS = [
 // A qué pestaña lleva tocar cada tipo de aviso
 const DESTINATION = { achievement: 'achievements', nearby: 'map', capture: 'collection' };
 const MARK = { achievement: '★', nearby: '●', capture: '+' };
-const MARK_COLOR = { achievement: palette.amarillo, nearby: '#FF8C00', capture: palette.verde };
+const MARK_COLOR = { achievement: palette.amarillo, nearby: palette.naranja, capture: palette.verde };
 
 // Buzón de la app: historial de logros, avistamientos cercanos y capturas.
 // onBack cierra el buzón; onNavigate(tab) cambia de pestaña (lo recibe de la navegación principal).

@@ -15,7 +15,7 @@ export const shadow = { offset: 4, color: palette.tinta };
 // Tamaños de fuente permitidos. PressStart2P (display) y VT323 (body) tienen escalas propias.
 export const fontSize = {
   display: { xs: 8, sm: 10, md: 12, lg: 16, xl: 24 },
-  body: { caption: 18, body: 20, bodyLg: 24 },
+  body: { tab: 16, caption: 18, body: 20, bodyLg: 24 }, // `tab`: etiquetas del tab bar (12 letras en ~72 px)
 };
 
 // Roles tipográficos: usar `...type.title` en vez de fontFamily/fontSize sueltos.

@@ -10,7 +10,8 @@ import PixelIcon from '../components/PixelIcon';
 import NotificationBell from '../components/NotificationBell';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import { NotificationsProvider } from '../store/notificationsStore';
-import styles from '../styles';
+import PixelBox from '../components/PixelBox';
+import styles, { colors } from '../styles';
 
 const tabs = [
   { id: 'map', label: 'Mapa', Screen: MapScreen },
@@ -62,16 +63,20 @@ export default function MainNavigation({ session, onUserUpdated, onLogout }) {
                 accessibilityLabel={label}
                 accessibilityState={{ selected }}
                 onPress={() => goToTab(id)}
-                style={({ pressed }) => [
-                  camera ? styles.cameraTab : styles.tab,
-                  selected && !camera && styles.selectedTab,
-                  pressed && styles.pressed,
-                ]}
+                style={camera ? styles.cameraTab : [styles.tab, selected && styles.selectedTab]}
               >
-                <View style={camera && [styles.cameraButton, selected && styles.selectedCamera]}>
-                  <PixelIcon name={id} />
-                </View>
-                {!camera && <Text style={[styles.tabLabel, selected && styles.selectedLabel]}>{label.toUpperCase()}</Text>}
+                {({ pressed }) => (
+                  <>
+                    {camera ? (
+                      <PixelBox pressed={pressed} backgroundColor={colors.camera} style={[styles.cameraButton, selected && styles.selectedCamera]}>
+                        <PixelIcon name={id} />
+                      </PixelBox>
+                    ) : (
+                      <PixelIcon name={id} />
+                    )}
+                    {!camera && <Text style={[styles.tabLabel, selected && styles.selectedLabel]}>{label.toUpperCase()}</Text>}
+                  </>
+                )}
               </Pressable>
             );
           })}

@@ -658,3 +658,34 @@ Lo que se hizo:
 - Franjas lilas a los costados: era el fondo del contenedor visible porque resizeMode="contain" deja bandas si la imagen no es exactamente cuadrada. Se cambió a resizeMode="cover".
 - Verificado: sin pruebas en el teléfono tras el cambio a cover, y sin correr los tests de la app.
 ```
+
+## 2026-11-13 — Frontend: estética pixel coherente (rama fix-frontend)
+
+```text
+Resumen de los mensajes y decisiones:
+
+Pedido (texto original): "Preciso mejorar el frontend, actualmente hay inconsistencias, y si bien ya hay una estetica de pixeles es desprolija y fea, muestrame cómo podrías mejorarlo". Después de aprobado el plan: "sigamos con la fase 3, pero considera arreglar tambien [...] cuando completo mis datos, el teclado oculta la confirmación de la contraseña [...] habría que hacer desplazable el menu cuando esta activo el teclado". Luego, con capturas del teléfono, fueron pidiendo ajustes: un marco superior con el logo y el buzón; la pantalla de captura con scroll, botones lado a lado y sin las sombras gruesas; "leer todo" mal ubicado en Avisos, pop-up del mapa feo e íconos muy grandes; centrar el ícono de la cámara con los demás; y reordenar la pestaña de perfil/ajustes.
+
+Diagnóstico (auditoría): solo la paleta y las fuentes estaban centralizadas. Había 28 tamaños de fuente, radios de 2 a 31, bordes de 2/3/4 con sombras simuladas de tres formas, ProgressBar y Field duplicados, 3 botones "volver" distintos, glifos Unicode e ActivityIndicator mezclados con íconos PNG, y PNG de 1254 px mostrados a 50 dp.
+
+Decisiones dadas:
+- Plan en 4 fases: tokens, componentes base, migración de pantallas y assets. Esquinas rectas (radius 0), un solo borde de 3 px, escala fija de tipografía y espaciado de 4 en 4.
+- Las sombras duras se probaron y el usuario las rechazó ("gruesas, feas, sin la misma dirección"): se apagaron en toda la app con theme.shadow.enabled = false (en true se restauran); sin sombra, el presionado se marca con opacidad 0.7.
+- Marca unificada como "PokeBO" (el login decía "PokédexUy"). El marco superior usa la pokébola del inicio con el texto a la derecha, sin borde superior.
+- Botón de la cámara del tab bar cuadrado en vez de circular (los PNG circulares chocaban con las esquinas rectas); su ícono se alinea con los demás por construcción (franja de ícono común).
+- Avatares: se probó reducirlos a 60 celdas y se descartó porque rompía el texto del nombre; quedan los originales.
+- Splash no se agregó (requiere expo-splash-screen, no instalado). Los PNG de buttons/ no se usan más pero se conservan.
+
+Lo que se hizo (app/src):
+- styles/theme.js (nuevo): spacing, radius, border, shadow, fontSize y roles tipográficos (title, display, heading, subtitle, label, labelLg, button, input, body, caption, error). palette.json suma naranja; colors.js pierde el alias muted; README de styles documenta el tema.
+- components (nuevos): PixelBox, Button (AuthButton delega en él), TextField, ProgressBar, Chip, Icon, PixelSpinner, ScreenHeader + BackButton, KeyboardAwareScroll, AppHeader, Section. Panel pasa a PixelBox.
+- Teclado: KeyboardAwareScroll usa KeyboardAvoidingView con padding en Android e iOS, agrega espacio igual a la altura del teclado y TextField se desplaza solo al enfocarse. Antes AuthLayout solo evitaba el teclado en iOS, por eso en Android tapaba la confirmación de la contraseña. Lo usan AuthLayout y la pantalla de perfil.
+- Todas las pantallas migradas a los componentes y tokens (sin borderRadius distinto de 0, sin fontSize sueltos, sin hex fuera de la paleta salvo el overlay H3 de desarrollo y el velo de la cámara). Glifos Unicode por íconos PNG, ActivityIndicator por PixelSpinner, un solo BackButton; se borra el stub MyCapturesScreen.
+- Marco superior (AppHeader) fijo sobre las pestañas; se oculta con el buzón abierto.
+- Captura: ScrollView, estrellas de 24, botones OTRA FOTO (cielo) y SIGUIENTE en fila.
+- Avisos: encabezado con ScreenHeader (VOLVER | LEER TODO y el título debajo). Mapa: pop-up compacto (nombre y X arriba; foto de 80 a la izquierda con el tiempo y una etiqueta EN TU COLECCIÓN / SIN CAPTURAR) y marcador de 40x24; el botón de actualizar pasa a ser un botón con texto.
+- Perfil y Ajustes en secciones: tarjeta de resumen, EDITAR PERFIL (avatares en grilla de 3), SEGURIDAD (cambiar contraseña se abre ahí), AVISOS y CERRAR SESIÓN al final.
+- Assets: pokébolas (32 celdas a 8x), buzón (24x17) y marcador del mapa (32x19 a 8x) reexportados desde los originales de 1254/1536 px (promedio de área y color más frecuente de cada grupo de la paleta); los PNG pasan de ~2,2 MB a ~10 KB. icon.png y adaptive-icon.png nuevos y app.json con icon, adaptiveIcon y userInterfaceStyle light (el ícono nuevo requiere regenerar la build nativa).
+
+Verificado con los tests de la app (34) y un chequeo de parseo e identificadores sin declarar de todos los archivos, además de revisar cada imagen exportada; el usuario fue probando en el teléfono y confirmó el resultado final de la pestaña de perfil ("ahora sí quedó bien"). Sin probar en iPhone. El teclado en Android conviene reconfirmarlo.
+```

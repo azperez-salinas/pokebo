@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Button from '../components/Button';
 import Chip from '../components/Chip';
 import Icon from '../components/Icon';
@@ -55,11 +55,11 @@ export default function CaptureResultScreen({ result, error, onBack, onNext }) {
   }
 
   return (
-    <View style={local.container}>
+    <ScrollView style={local.container} contentContainerStyle={local.content}>
       <View style={local.titleRow}>
-        <Icon source={icons.extras.star} size={48} />
+        <Icon source={icons.extras.star} size={24} />
         <Text accessibilityRole="header" style={local.title}>{'¡CAPTURA\nLOGRADA!'}</Text>
-        <Icon source={icons.extras.star} size={48} />
+        <Icon source={icons.extras.star} size={24} />
       </View>
 
       <Panel style={local.photoPanel}>
@@ -90,15 +90,16 @@ export default function CaptureResultScreen({ result, error, onBack, onNext }) {
       ) : null}
 
       <View style={local.actions}>
-        <Button label="SIGUIENTE" onPress={onNext} />
-        <Button label="OTRA FOTO" color="amarillo" onPress={onBack} />
+        <View style={local.action}><Button label="OTRA FOTO" color="cielo" onPress={onBack} /></View>
+        <View style={local.action}><Button label="SIGUIENTE" onPress={onNext} /></View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const local = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.fondo, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.lg },
+  container: { flex: 1, backgroundColor: palette.fondo },
+  content: { flexGrow: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.lg },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg },
   title: { ...type.title, color: palette.tinta, textAlign: 'center', marginHorizontal: spacing.md },
   photoPanel: { padding: 0, overflow: 'hidden', aspectRatio: 1.4, backgroundColor: palette.linea },
@@ -116,5 +117,6 @@ const local = StyleSheet.create({
   achievementRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   achievementName: { ...type.body, color: palette.tinta, flex: 1 },
   error: { color: palette.rosa },
-  actions: { width: '100%', marginTop: 'auto', gap: spacing.md },
+  actions: { flexDirection: 'row', width: '100%', marginTop: 'auto', paddingTop: spacing.lg, gap: spacing.md },
+  action: { flex: 1 },
 });

@@ -8,9 +8,10 @@ export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };
 export const radius = 0;
 export const border = { width: 3, color: palette.tinta };
 
-// Sombra dura: un bloque de tinta desplazado hacia abajo-derecha.
-// Al presionar, el elemento se desplaza `offset` y la sombra desaparece.
-export const shadow = { offset: 4, color: palette.tinta };
+// Sombra dura: un bloque de tinta desplazado hacia abajo-derecha. Apagada (`enabled: false`) porque se veía gruesa y
+// desigual; con `enabled: true` vuelve en toda la app (al presionar, el elemento se hunde `offset` sobre la sombra).
+// Sin sombra, el presionado se indica con una leve transparencia.
+export const shadow = { enabled: false, offset: 4, color: palette.tinta };
 
 // Tamaños de fuente permitidos. PressStart2P (display) y VT323 (body) tienen escalas propias.
 export const fontSize = {

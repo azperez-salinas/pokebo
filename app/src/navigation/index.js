@@ -7,7 +7,7 @@ import CameraScreen from '../screens/CameraScreen';
 import AchievementsScreen from '../screens/AchievementsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import PixelIcon from '../components/PixelIcon';
-import NotificationBell from '../components/NotificationBell';
+import AppHeader from '../components/AppHeader';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import { NotificationsProvider } from '../store/notificationsStore';
 import PixelBox from '../components/PixelBox';
@@ -37,6 +37,7 @@ export default function MainNavigation({ session, onUserUpdated, onLogout }) {
   return (
     <NotificationsProvider>
       <SafeAreaView style={styles.screen}>
+        {inboxOpen ? null : <AppHeader onOpenInbox={() => setInboxOpen(true)} />}
         <View style={mapVisible ? local.mapShown : local.mapHidden}>
           <MapScreen active={mapVisible} />
         </View>
@@ -47,9 +48,6 @@ export default function MainNavigation({ session, onUserUpdated, onLogout }) {
             {activeTab !== 'map' ? (
               <Screen session={session} onUserUpdated={onUserUpdated} onLogout={onLogout} onNavigate={goToTab} />
             ) : null}
-            <View pointerEvents="box-none" style={local.bell}>
-              <NotificationBell onPress={() => setInboxOpen(true)} />
-            </View>
           </>
         )}
         <View style={styles.tabBar}>
@@ -87,7 +85,6 @@ export default function MainNavigation({ session, onUserUpdated, onLogout }) {
 }
 
 const local = StyleSheet.create({
-  bell: { position: 'absolute', top: 12, right: 16 },
   mapShown: { flex: 1 },
   mapHidden: { display: 'none' },
 });

@@ -669,9 +669,9 @@ const local = StyleSheet.create({
   devText: { ...type.caption, color: palette.tinta },
   devError: { ...type.caption, color: palette.rosa },
 
-  refreshButton: { position: 'absolute', top: 72, right: spacing.lg },
+  refreshButton: { position: 'absolute', top: spacing.lg, right: spacing.lg },
 
-  mapErrorBox: { position: 'absolute', top: 128, left: spacing.lg, right: spacing.lg },
+  mapErrorBox: { position: 'absolute', top: 72, left: spacing.lg, right: spacing.lg },
   mapErrorFace: { padding: spacing.sm, borderColor: palette.rosa },
   mapErrorText: { ...type.caption, color: palette.rosa, textAlign: 'center' },
 

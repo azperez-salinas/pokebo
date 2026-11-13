@@ -5,7 +5,7 @@ import Chip from '../components/Chip';
 import Icon from '../components/Icon';
 import PixelBox from '../components/PixelBox';
 import PixelSpinner from '../components/PixelSpinner';
-import { BackButton } from '../components/ScreenHeader';
+import ScreenHeader from '../components/ScreenHeader';
 import useNotifications from '../hooks/useNotifications';
 import { getNotifications, markAllNotificationsRead, markNotificationRead } from '../services/notifications.service';
 import { border, icons, palette, spacing, type as font } from '../styles';
@@ -83,13 +83,14 @@ export default function NotificationsScreen({ onBack, onNavigate }) {
 
   return (
     <View style={local.container}>
-      <View style={local.header}>
-        <View style={local.side}><BackButton onPress={onBack} /></View>
-        <Text accessibilityRole="header" style={local.title}>AVISOS</Text>
-        <View style={[local.side, local.sideEnd]}>
-          <Button size="small" label="LEER TODO" accessibilityLabel="Marcar todos como leídos" disabled={!hasUnread} onPress={markAll} />
-        </View>
-      </View>
+      <ScreenHeader
+        title="AVISOS"
+        onBack={onBack}
+        style={local.header}
+        right={(
+          <Button size="small" label="LEER TODO" accessibilityLabel="Marcar todos como leídos" disabled={!hasUnread} onPress={markAll} style={local.markAll} />
+        )}
+      />
 
       <View style={local.filters}>
         {FILTERS.map((filter) => (
@@ -145,10 +146,8 @@ export default function NotificationsScreen({ onBack, onNavigate }) {
 
 const local = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.fondo },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
-  side: { flex: 1 },
-  sideEnd: { alignItems: 'flex-end' },
-  title: { ...font.title, color: palette.tinta },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, marginBottom: spacing.sm },
+  markAll: { alignSelf: 'flex-end' },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   centerList: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
@@ -156,7 +155,7 @@ const local = StyleSheet.create({
   retry: { marginTop: spacing.lg },
   itemOuter: { marginHorizontal: spacing.lg, marginBottom: spacing.sm },
   item: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.sm + 2 },
-  mark: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderWidth: border.width, borderColor: border.color, borderRadius: 0 },
+  mark: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderWidth: border.width, borderColor: border.color, borderRadius: 0 },
   itemBody: { flex: 1 },
   itemTitle: { ...font.subtitle, color: palette.tinta },
   itemText: { ...font.caption, color: palette.azul },

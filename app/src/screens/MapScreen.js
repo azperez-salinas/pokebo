@@ -3,6 +3,7 @@ import { AppState, Image, Linking, Platform, Pressable, StyleSheet, Text, View }
 import * as Location from 'expo-location';
 import MapView, { Marker, Polygon } from 'react-native-maps';
 import Button from '../components/Button';
+import Chip from '../components/Chip';
 import Icon from '../components/Icon';
 import Panel from '../components/Panel';
 import PixelBox from '../components/PixelBox';
@@ -593,54 +594,52 @@ export default function MapScreen({ active = true }) {
 
       {selectedSighting ? (
         <Panel outerStyle={local.sightingCardOuter} style={local.sightingCard}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Cerrar información del avistamiento"
-            onPress={() => setSelectedSighting(null)}
-            style={local.closeButton}
-          >
-            {({ pressed }) => (
-              <PixelBox pressed={pressed} shadowOffset={2} backgroundColor={palette.rosa} style={local.closeBox}>
-                <Icon source={icons.extras.close} size={24} />
-              </PixelBox>
-            )}
-          </Pressable>
-
-          <Text style={local.sightingTitle}>
-            {selectedSighting.species?.commonName ?? 'Especie desconocida'}
-          </Text>
-
-          <Text style={local.sightingTime}>
-            {elapsedSince(selectedSighting.seenAt)}
-          </Text>
-
-          <View style={local.sightingPhotoFrame}>
-            {photoLoading ? (
-              <PixelSpinner accessibilityLabel="Buscando foto" />
-            ) : selectedPhoto ? (
-              <AuthImage
-                source={photoSource(selectedPhoto)}
-                style={local.sightingPhoto}
-                resizeMode="cover"
-              />
-            ) : (
-              <Icon source={icons.extras.question} size={48} />
-            )}
+          <View style={local.sightingHeader}>
+            <Text style={local.sightingTitle} numberOfLines={2}>
+              {selectedSighting.species?.commonName ?? 'Especie desconocida'}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar información del avistamiento"
+              hitSlop={8}
+              onPress={() => setSelectedSighting(null)}
+            >
+              {({ pressed }) => (
+                <PixelBox pressed={pressed} backgroundColor={palette.rosa} style={local.closeBox}>
+                  <Icon source={icons.extras.close} size={16} />
+                </PixelBox>
+              )}
+            </Pressable>
           </View>
 
-          {photoError ? (
-            <Text style={local.sightingInfo} accessibilityRole="alert">
-              {photoError}
-            </Text>
-          ) : (
-            <Text style={local.sightingInfo}>
-              {photoLoading
-                ? 'Buscando en tu colección...'
-                : selectedPhoto
-                  ? 'Especie registrada en tu colección'
-                  : 'Todavía no capturaste esta especie'}
-            </Text>
-          )}
+          <View style={local.sightingBody}>
+            <View style={local.sightingPhotoFrame}>
+              {photoLoading ? (
+                <PixelSpinner accessibilityLabel="Buscando foto" size={8} />
+              ) : selectedPhoto ? (
+                <AuthImage
+                  source={photoSource(selectedPhoto)}
+                  style={local.sightingPhoto}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Icon source={icons.extras.question} size={24} />
+              )}
+            </View>
+
+            <View style={local.sightingDetails}>
+              <Text style={local.sightingTime}>{elapsedSince(selectedSighting.seenAt)}</Text>
+              {photoError ? (
+                <Text style={local.sightingInfo} accessibilityRole="alert">{photoError}</Text>
+              ) : photoLoading ? (
+                <Text style={local.sightingInfo}>Buscando en tu colección...</Text>
+              ) : selectedPhoto ? (
+                <Chip label="EN TU COLECCIÓN" color={palette.verde} />
+              ) : (
+                <Chip label="SIN CAPTURAR" color={palette.amarillo} />
+              )}
+            </View>
+          </View>
         </Panel>
       ) : null}
     </View>
@@ -675,25 +674,22 @@ const local = StyleSheet.create({
   mapErrorFace: { padding: spacing.sm, borderColor: palette.rosa },
   mapErrorText: { ...type.caption, color: palette.rosa, textAlign: 'center' },
 
-  // El PNG es 32x19 celdas pixel: 64x38 dp = 2 dp por celda
+  // El PNG es 32x19 celdas pixel: 40x24 dp
   sightingMarkerImage: {
-    width: 64,
-    height: 38,
+    width: 40,
+    height: 24,
   },
 
   sightingCardOuter: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: 150 },
-  sightingCard: { backgroundColor: palette.fondo, padding: spacing.lg, alignItems: 'center', gap: spacing.sm },
-
-  closeButton: { position: 'absolute', top: spacing.sm, right: spacing.sm, zIndex: 1 },
-  closeBox: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-
-  sightingTitle: { ...type.heading, color: palette.tinta, textAlign: 'center', marginHorizontal: spacing.xl, marginTop: spacing.sm },
-  sightingTime: { ...type.subtitle, color: palette.azul },
-
+  sightingCard: { backgroundColor: palette.blanco, padding: spacing.md, gap: spacing.md },
+  sightingHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  sightingTitle: { ...type.heading, flex: 1, color: palette.tinta },
+  closeBox: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  sightingBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   sightingPhotoFrame: {
-    width: 110,
-    height: 110,
-    backgroundColor: palette.blanco,
+    width: 80,
+    height: 80,
+    backgroundColor: palette.linea,
     borderWidth: border.width,
     borderColor: border.color,
     borderRadius: 0,
@@ -705,6 +701,7 @@ const local = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-
-  sightingInfo: { ...type.caption, color: palette.tinta, textAlign: 'center' },
+  sightingDetails: { flex: 1, gap: spacing.sm, alignItems: 'flex-start' },
+  sightingTime: { ...type.subtitle, color: palette.azul },
+  sightingInfo: { ...type.caption, color: palette.tinta },
 });

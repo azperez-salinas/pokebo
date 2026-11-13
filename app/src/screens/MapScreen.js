@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Image, ImageBackground, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Location from 'expo-location';
-import MapView, { Marker, Polygon } from 'react-native-maps';
+import MapView, { Marker, Polygon, PROVIDER_GOOGLE } from 'react-native-maps';
 import AuthButton from '../components/AuthButton';
 import useLocation from '../hooks/useLocation';
 import { getSightings } from '../services/map.service';
@@ -454,6 +454,7 @@ export default function MapScreen({ active = true }) {
       {initialRegion ? (
       <MapView
         ref={mapRef}
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         style={StyleSheet.absoluteFill}
         initialRegion={initialRegion}
         minZoomLevel={Platform.OS === 'android' ? minZoomLevel : undefined}

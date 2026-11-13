@@ -3,6 +3,9 @@
     "name": "pokebo",
     "slug": "pokebo",
     "version": "0.1.0",
+    "ios": {
+      "bundleIdentifier": "com.pokebo.app"
+    },
     "android": {
       "package": "com.pokebo.app"
     },
@@ -27,6 +30,12 @@
       ],
       "expo-notifications",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f7d77889-9f2d-46a8-bc8d-495d50c45ce8"
+      }
+    },
+    "owner": "lhercmpj"
   }
 }

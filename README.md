@@ -340,6 +340,16 @@ Todos los archivos `.env` reales están ignorados por Git. Los archivos importan
 Los archivos `.env.example` correspondientes documentan los nombres de las variables y son los únicos que
 se pueden compartir o versionar sin cifrado.
 
+## Despliegue en AWS
+
+La demostración corre en AWS (`us-east-2`) con infraestructura como código en [`infra/`](./infra) (CDK v2, TypeScript).
+
+- Arquitectura aprobada, decisiones y novedades de la implementación: [`AWS_MIGRATION_AGENT.md`](./AWS_MIGRATION_AGENT.md) (sección 19).
+- Manual de operación (apagar y encender, reiniciar la app "de cero", backups, publicar versiones, diagnóstico y borrado):
+  [`infra/README.md`](./infra/README.md).
+- Resumen: Edge es lo único público (HTTPS con Caddy e IP elástica); Core, MongoDB y Redis son privados; el correo y el
+  push salen por SQS + Lambda; los secretos viven en Secrets Manager.
+
 ## decisiones pokebo 11/11/26
 
 se implementa notificación push para avistamientos cercanos mientras no se tiene la app en primer plano

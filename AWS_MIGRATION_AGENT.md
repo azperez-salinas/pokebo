@@ -58,6 +58,8 @@ Decisiones tomadas durante la implementación (2026-11-14, aprobadas por el equi
 
 ## 4. Arquitectura final de la demostración
 
+> Los detalles que se descubrieron o decidieron al implementar (arranque de las instancias, permisos IAM efectivos, parámetros SSM, operación y limitaciones) están en la **sección 19** y prevalecen sobre este diseño inicial.
+
 ```mermaid
 flowchart LR
     Mobile[App móvil Expo/EAS] -->|HTTPS| Edge[EC2 Edge\nt3.micro\nsubred pública]
@@ -146,7 +148,7 @@ Requisitos:
 - mantener persistente el directorio de datos de Caddy para certificados;
 - configurar Express con un solo proxy confiable para conservar la IP real usada por el rate limiting.
 
-`sslip.io` actúa únicamente como DNS; no recibe ni termina el tráfico de la aplicación. Caddy termina TLS y reenvía hacia el contenedor Edge dentro de la misma instancia. Si la Elastic IP se libera, cambiarán el hostname y `EXPO_PUBLIC_API_URL`, por lo que se necesitará una nueva compilación o configuración remota de la app.
+Implementado tal como se describe (detalles en la sección 19.2). `sslip.io` actúa únicamente como DNS; no recibe ni termina el tráfico de la aplicación. Caddy termina TLS y reenvía hacia el contenedor Edge dentro de la misma instancia. Si la Elastic IP se libera, cambiarán el hostname y `EXPO_PUBLIC_API_URL`, por lo que se necesitará una nueva compilación o configuración remota de la app.
 
 ## 7. Secretos y configuración
 
@@ -267,12 +269,14 @@ infra/
 │   ├── network-stack.ts       (hecho y desplegado)
 │   ├── data-stack.ts          (hecho y desplegado)
 │   ├── messaging-stack.ts     (hecho y desplegado)
-│   ├── compute-stack.ts       (pendiente: ECR, Core, Edge, IP elástica, Caddy)
+│   ├── registry-stack.ts      (hecho y desplegado: repositorios ECR)
+│   ├── compute-stack.ts       (hecho y desplegado: Core, Edge, IP elástica, Caddy)
 │   └── observability-stack.ts (pendiente: panel y alarmas restantes)
-├── test/
+├── scripts/                   (hecho: release, status, stop, start, snapshot, reset-demo, lib)
+├── test/                      (31 pruebas de assertions)
 ├── cdk.json
 ├── package.json
-└── README.md                  (pendiente: runbook)
+└── README.md                  (hecho: runbook)
 ```
 
 Los secretos viven en el stack de datos, que tiene termination protection. Para borrarlo hay que desactivarla antes (`aws cloudformation update-termination-protection --no-enable-termination-protection`). El volumen de datos de MongoDB tiene política *Retain*: sobrevive al borrado del stack y hay que eliminarlo a mano si ya no se quiere.
@@ -434,7 +438,103 @@ Solicitar aprobación antes de:
 - cambiar IA de síncrona a asíncrona;
 - omitir un control de seguridad para cumplir la fecha.
 
-## 19. Estado actual de la infraestructura (2026-11-14)
+## 19. Arquitectura final implementada: novedades respecto al diseño
+
+Esta sección recoge lo que quedó **distinto o más detallado** que en las secciones 4 a 15 al implementarlo y probarlo (2026-11-14).
+Prevalece sobre ellas si hay contradicción.
+
+### 19.1 Cómo arrancan Core y Edge (sin secretos en la imagen ni en el user data)
+
+Cada EC2 tiene un servicio `systemd` llamado `pokebo-app` (oneshot, habilitado). En **cada arranque** ejecuta `/opt/pokebo/start.sh`, que:
+
+1. espera la etiqueta de imagen publicada en SSM (`/pokebo/demo/image-tag/core-api` o `.../edge-api`);
+2. se autentica en ECR con el rol de la instancia y descarga esa imagen;
+3. arma el archivo de entorno **solo en memoria** (`/run/pokebo/*.env`, permisos 600), leyendo los secretos de Secrets Manager (Core) o los parámetros públicos de SSM (Edge);
+4. lanza el contenedor con `--env-file` y **borra el archivo** (`shred`) al terminar.
+
+Consecuencias:
+
+- El *user data* de EC2 solo contiene el script de arranque: **ninguna credencial**. Las credenciales sí son visibles con `docker inspect` dentro de la instancia (acceso solo para root por Session Manager).
+- **Publicar una versión nueva no reemplaza la máquina:** `infra/scripts/release.sh` sube la imagen, cambia la etiqueta en SSM y ejecuta `systemctl restart pokebo-app`. Así el certificado y la IP de Edge no cambian.
+- Los cambios en el script de arranque **sí** reemplazan la instancia (`userDataCausesReplacement`). Core y Edge no guardan estado, por lo que es seguro.
+- Si Core se reemplaza cambia su IP privada; Edge lee `/pokebo/demo/core-url` solo al arrancar, así que hay que reiniciar su servicio (`systemctl restart pokebo-app` en Edge).
+
+```mermaid
+flowchart LR
+    Dev[release.sh en tu PC] -->|docker build + push, tag inmutable| ECR[(ECR)]
+    Dev -->|etiqueta activa| SSM[(SSM Parameter Store)]
+    Dev -->|systemctl restart pokebo-app| EC2[EC2 Core / Edge]
+    EC2 -->|lee etiqueta| SSM
+    EC2 -->|docker pull| ECR
+    EC2 -->|Core: lee secretos| SM[(Secrets Manager)]
+    EC2 -->|Edge: lee parámetros públicos| SSM
+```
+
+### 19.2 Edge: contenedores y HTTPS
+
+- En la instancia de Edge corren **dos contenedores en una red Docker propia**: `edge-api` (sin puertos publicados) y `caddy` (único que publica 80 y 443).
+- Caddy obtiene y renueva solo el certificado público de `https://<ip-con-guiones>.sslip.io` (respaldo automático de emisor si uno limita). El directorio de datos de Caddy persiste en `/var/lib/caddy` del disco de la instancia (el certificado sobrevive a reinicios, no a reemplazar la instancia).
+- Caddy añade HSTS, `nosniff` y `no-referrer`, quita el header `Server`, redirige HTTP→HTTPS (308) y comprime respuestas.
+- Express confía en exactamente un proxy (`trust proxy = 1`) para el rate limiting por IP.
+- La IP elástica se asocia a Edge después de crearse la instancia; el arranque espera a tener salida a internet antes de instalar Docker.
+- La **IP elástica y los repositorios** tienen política *Retain/propia*: la IP sobrevive al borrado del stack (hay que liberarla a mano).
+- El tráfico entre Edge y Core, y entre Core y MongoDB, viaja en **HTTP y sin TLS dentro de la VPC** (aislado por Security Groups). Solo Redis usa TLS (lo exige ElastiCache con autenticación).
+
+### 19.3 Parámetros de SSM Parameter Store (no secretos)
+
+| Parámetro | Contenido | Quién lo escribe | Quién lo lee |
+|---|---|---|---|
+| `/pokebo/demo/jwt-public-key` | Clave pública JWT | Carga manual | Edge |
+| `/pokebo/demo/edge-public-ip` | IP elástica de Edge | CDK | Edge |
+| `/pokebo/demo/core-url` | `http://<ip-privada-core>:4000` | CDK | Edge |
+| `/pokebo/demo/image-tag/core-api` | Etiqueta activa de la imagen de Core | `release.sh` | Core |
+| `/pokebo/demo/image-tag/edge-api` | Etiqueta activa de la imagen de Edge | `release.sh` | Edge |
+
+### 19.4 Permisos IAM efectivos (mínimo privilegio)
+
+| Rol | Puede | No puede |
+|---|---|---|
+| **Edge** (EC2) | Session Manager; bajar **solo** la imagen de Edge; leer **4** parámetros SSM; escribir sus 2 grupos de logs | Leer secretos, usar SQS, bajar la imagen de Core |
+| **Core** (EC2) | Session Manager; bajar **solo** la imagen de Core; leer 6 secretos (`mongo-app`, `redis-auth`, `jwt-private-key`, 2 peppers, `ai-provider-key`); publicar en las colas de correo y push; consumir la cola de feedback; leer su etiqueta; escribir sus logs | Leer `mongo-root` ni la credencial de FCM |
+| **MongoDB** (EC2) | Session Manager; leer `mongo-root` y `mongo-app`; descargar **un** objeto S3 (el zip de `mongo-init`) | Cualquier otro secreto o cola |
+| **Lambda correo** | Escribir marcas en DynamoDB; `ses:SendEmail` con condición `ses:FromAddress = pokebouru@gmail.com`; logs | Leer secretos |
+| **Lambda push** | Marcas en DynamoDB; leer **solo** `fcm-service-account`; escribir en la cola de feedback; logs | Usar SES |
+
+Las instancias exigen IMDSv2 con `hop limit = 2` (los contenedores pueden obtener credenciales del rol). Todas las instancias son `t3` en modo `standard`.
+
+### 19.5 Observabilidad que existe hoy
+
+- Logs de contenedores con el driver `awslogs` en `/pokebo/demo/core-api`, `/pokebo/demo/edge-api` y `/pokebo/demo/caddy` (7 días de retención); las Lambdas escriben en sus propios grupos (7 días).
+- Health checks: `GET /health` en Edge (200 si el proceso vive) y en Core (200 solo con MongoDB y Redis conectados; 503 si no). Docker los usa como health check de los contenedores; `start.sh` y `status.sh` los usan para verificar el entorno.
+- Alarmas: 3 de DLQ y 2 de errores de Lambda, **sin acciones de aviso**. No hay alarmas de CPU, disco, memoria ni 5xx (pendiente).
+
+### 19.6 Operación (nuevo)
+
+Scripts probados en vivo en `infra/scripts/`, explicados en [infra/README.md](./infra/README.md): `status.sh`, `stop.sh`, `start.sh`, `snapshot.sh`, `reset-demo.sh` y `release.sh` (más `lib.sh`, funciones comunes que ejecutan comandos remotos por Systems Manager).
+
+- Apagar y encender las 3 EC2 toma ~50 s y ~110 s. `start.sh` solo termina con éxito cuando Core responde con MongoDB y Redis conectados.
+- **Particularidad de MongoDB:** corre con `restart=unless-stopped`. `stop.sh` lo cierra con `docker stop` (apagado ordenado), y Docker **no** relanza un contenedor parado a mano al reiniciar. Por eso `start.sh` ejecuta `docker start mongo`. Encender las EC2 desde la consola de AWS puede dejar MongoDB parado.
+- `reset-demo.sh --yes` conserva `species` y `achievements` y borra todo lo demás (incluidas fotos de GridFS y Redis).
+
+### 19.7 Cambios en el código de la aplicación
+
+- Nuevos `GET /health` en Core y Edge (sin autenticación, sin datos sensibles); `core-api/src/utils/health.js` con su lógica.
+- `.dockerignore` en `core-api` y `edge-api` (los `.env` nunca llegan a las imágenes).
+- `app/src/config/index.js`: `EXPO_PUBLIC_API_URL` también se lee en las compilaciones de EAS (antes solo en desarrollo; una compilación `preview` habría apuntado a `https://api.example.com`).
+- Core: servicios `push-publisher` y `push-feedback` (consumidor de la cola de feedback que retira tokens rechazados).
+- App: al activar "Avisos de cercanía" también se activa `pushEnabled`.
+
+### 19.8 Limitaciones y riesgos conocidos
+
+- **Una sola AZ y un solo NAT:** una caída de `us-east-2a` deja la demo fuera de servicio.
+- **Dependencia de `sslip.io`** para el nombre; si ese DNS fallara, la URL pública no se resolvería.
+- **Compromiso de Edge:** no expone datos ni claves (no tiene secretos y los datos solo aceptan a Core), pero un atacante vería en claro el tráfico que pase por Caddy (contraseñas, OTP, tokens) y podría llamar a Core directamente saltándose el rate limiting, que vive solo en Edge. Mitigación futura: rate limiting también en Core, WAF y ALB con dominio propio.
+- Las imágenes actuales se construyeron con cambios sin commitear (etiqueta `...-dirty-...`); conviene volver a publicar tras commitear.
+- Reenvío de push: un reintento reenvía el mensaje completo (posible duplicado con varios dispositivos).
+- En desarrollo local el OTP necesita una cola SQS real (ver sección 10).
+- Restauración completa de un snapshot y teardown: documentados, **no ejecutados**.
+
+## 20. Estado actual de la infraestructura (2026-11-14)
 
 | Stack | Estado | Contenido |
 |---|---|---|
@@ -451,10 +551,10 @@ Lo que sigue costando mientras exista, aunque se apaguen las EC2: NAT Gateway, E
 Pendientes conocidos:
 
 - Dos correos del equipo siguen sin verificar en SES (`ariana.perez.estudio@gmail.com`, `Lautisiri@gmail.com`): cada persona debe abrir el enlace del correo de AWS.
-- Runbook en `infra/README.md`: arranque/parada, reinicio "de cero" de la demo (conservar solo el catálogo), diagnóstico por Session Manager, backup y restauración con snapshot del volumen, teardown y rollback.
+- ~~Runbook~~ **hecho** en `infra/README.md` con scripts probados en `infra/scripts/` (estado, apagar/encender, reinicio "de cero", snapshot). Sin probar: restauración completa de un snapshot sobre la instancia y el teardown (destructivo, requiere aprobación).
 - Compilación Android con la URL final de Edge, clave de Google Maps restringida y prueba de push real en un dispositivo.
 
-## 20. Posibles mejoras posteriores
+## 21. Posibles mejoras posteriores
 
 - Migrar Edge y Core de EC2/Docker a ECS Fargate para despliegues administrados, rollback y escalado.
 - Incorporar ALB + ACM y dominio propio para entrada HTTPS administrada.

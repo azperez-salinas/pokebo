@@ -6,7 +6,7 @@ const notificationsService = require('./notifications.service');
 const { AppError } = require('../utils/errors');
 const { latLngToCell: h3LatLngToCell, assertValidCell, cellsAround, ringDistance } = require('../utils/h3');
 
-const USER_CELL_TTL_SECONDS = 2 * 60; // polling cada 45 s: al salir de primer plano deja de estar activo pronto
+const USER_CELL_TTL_SECONDS = 5 * 60; // decisión funcional: mantener la última celda activa durante cinco minutos
 const SEEN_TTL_SECONDS = 24 * 60 * 60; // igual que la vida de un avistamiento
 
 const cellKey = (userId) => `user:cell:${userId}`;

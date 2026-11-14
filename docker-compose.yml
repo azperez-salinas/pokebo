@@ -4,7 +4,7 @@
 #   edge-core -> interna (sin internet). La comparten SOLO edge-api y core-api: es el único pasillo.
 #   data      -> interna (sin internet). Solo core-api, mongo y redis.
 # Resultado: el edge-api no puede ni resolver el nombre "mongo" o "redis"; para llegar a los datos
-# tiene que pasar por la API del core-api (que además exige la firma HMAC).
+# tiene que pasar por la API del core-api.
 # Las contraseñas se leen del archivo .env de la RAÍZ (ver .env.example).
 
 services:

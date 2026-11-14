@@ -1,6 +1,5 @@
-// POST /captures en el Edge: identifica la especie con la IA y reenvía al Core.
-// El Edge no guarda nada: la imagen viaja al Core en base64 dentro del JSON firmado (HMAC).
-const { identificarEspecie } = require('../services/ai.service');
+// POST /captures en el Edge: valida el multipart y reenvía la imagen al Core.
+// La identificación síncrona ocurre en Core para que la clave de IA no llegue a Edge.
 const { reenviarACore } = require('../services/forward.service');
 const { AppError } = require('../utils/errors');
 
@@ -19,14 +18,11 @@ async function create(req, res, next) {
       throw new AppError(400, 'VALIDATION_ERROR', 'lat debe estar entre -90 y 90 y lng entre -180 y 180');
     }
 
-    const ai = await identificarEspecie(req.file.buffer);
-
     const body = {
       imageBase64: req.file.buffer.toString('base64'),
       contentType: 'image/jpeg',
       lat,
       lng,
-      ai,
     };
     const { status, data } = await reenviarACore(req.originalUrl, 'POST', body, req.headers);
     return data === null ? res.status(status).end() : res.status(status).json(data);

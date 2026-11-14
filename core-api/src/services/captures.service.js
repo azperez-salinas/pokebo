@@ -10,7 +10,7 @@ const notificationsService = require("./notifications.service");
 const normalizeScientificName = require("../utils/normalizeScientificName");
 const { AppError } = require("../utils/errors");
 
-// Mismos umbrales que usa el Edge; el Core igual revalida porque la respuesta de la IA es entrada no confiable
+// La respuesta del proveedor de IA es entrada externa no confiable y se revalida antes de persistir.
 const SCREEN_PROBABILITY_LIMIT = 0.5;
 const MIN_ANIMAL_PROBABILITY = 0.5;
 

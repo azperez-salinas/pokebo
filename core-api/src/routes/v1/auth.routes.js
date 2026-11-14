@@ -4,7 +4,6 @@ const validate = require('../../middlewares/validate.middleware');
 const schemas = require('../../validators/auth.validator');
 const controller = require('../../controllers/auth.controller');
 
-// serviceAuth (firma HMAC del Edge) ya está montado global en app.js para todo /api/v1
 const router = Router();
 
 // /register queda como alias seguro para clientes en transicion: ya no crea usuarios ni emite tokens.

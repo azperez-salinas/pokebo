@@ -4,7 +4,6 @@ const bcrypt = require('bcrypt');
 const config = require('../config');
 const { redisClient } = require('../config/redis');
 const User = require('../models/User.model');
-const mailService = require('./mail.service');
 const { AppError } = require('../utils/errors');
 const toPublicUser = require('../utils/toPublicUser');
 const {
@@ -93,6 +92,7 @@ function findByUsernameOrEmail(usernameOrEmail) {
 
 async function forgotPassword(usernameOrEmail) {
   const user = await findByUsernameOrEmail(usernameOrEmail);
+  let delivery = null;
 
   // Exista o no la cuenta, la respuesta es la misma
   if (user && user.email) {
@@ -105,10 +105,18 @@ async function forgotPassword(usernameOrEmail) {
       .hSet(key, { hash: sha256(code), attempts: 0 })
       .expire(key, config.passwordResetTtl)
       .exec();
-    await mailService.sendPasswordResetCode(user.email, code);
+    delivery = {
+      purpose: 'password-reset',
+      email: user.email,
+      code,
+      expiresIn: config.passwordResetTtl,
+    };
   }
 
-  return { message: 'Si la cuenta existe, se envió un código al mail asociado' };
+  return {
+    public: { message: 'Si la cuenta existe, se envió un código al mail asociado' },
+    delivery,
+  };
 }
 
 async function resetPassword(usernameOrEmail, code, newPassword) {

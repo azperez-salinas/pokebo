@@ -10,8 +10,8 @@ que administra la lógica de negocio, MongoDB y Redis. Algunas funcionalidades c
 | Carpeta     | Qué es |
 |-------------|--------|
 | `app/`      | Cliente React Native (Expo). Solo habla con el Edge API. |
-| `edge-api/` | Gateway en la DMZ, único servicio con salida a internet. Verifica versión de la app, JWT (clave pública) y rate limit; reenvía al Core firmando con un secreto compartido; llama a la IA de identificación y al servicio de push (FCM/APNs). |
-| `core-api/` | Lógica de negocio en la red segura. Solo habla con MongoDB, Redis y el Edge. Firma los JWT con la clave privada. |
+| `edge-api/` | Gateway en la DMZ. Verifica versión, JWT con clave pública y rate limit; valida cargas y reenvía solicitudes al Core. No contiene credenciales de datos, IA, correo ni push. |
+| `core-api/` | Lógica de negocio en la red segura. Habla con MongoDB y Redis, firma JWT, identifica imágenes de forma síncrona y publica trabajos de correo/push. |
 
 Cada proyecto es independiente y tiene su propio `package.json`.
 
@@ -46,13 +46,13 @@ Copy-Item app/.env.example app/.env
 Luego se deben completar los valores reales:
 
 - `.env`: contraseñas de MongoDB y Redis utilizadas por Docker Compose.
-- `core-api/.env`: clave privada JWT, secreto compartido Edge-Core y `REGISTRATION_CODE_PEPPER`.
-- `edge-api/.env`: clave pública JWT, el mismo secreto Edge-Core y las credenciales SMTP.
+- `core-api/.env`: clave privada JWT, peppers OTP, conexiones de datos y configuración del proveedor de IA.
+- `edge-api/.env`: clave pública JWT y URL interna del Core; no debe contener secretos importantes.
 - `app/.env`: únicamente la URL pública del Edge API; nunca debe contener secretos.
 
-`JWT_PRIVATE_KEY` y `JWT_PUBLIC_KEY` deben pertenecer al mismo par RSA. `SERVICE_SHARED_SECRET` debe tener
-exactamente el mismo valor en Core y Edge. Los valores reales deben obtenerse del almacenamiento seguro del
-equipo y no copiarse al README.
+`JWT_PRIVATE_KEY` y `JWT_PUBLIC_KEY` deben pertenecer al mismo par RSA. En AWS, el Core no es público y su
+Security Group acepta conexiones únicamente desde Edge. Los valores reales deben obtenerse del almacenamiento
+seguro del equipo y no copiarse al README.
 
 ## Configurar la IP para Expo Go
 

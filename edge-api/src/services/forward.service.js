@@ -1,27 +1,13 @@
-// Reenvía una request al Core API firmada con HMAC.
-// Firma: HMAC-SHA256(SERVICE_SHARED_SECRET, "<timestamp>.<METHOD>.<path>.<body>") en X-Service-Signature (hex),
-// con el timestamp (ms) en X-Service-Timestamp. El Core recalcula y compara (serviceAuth.middleware).
-const crypto = require('crypto');
+// Reenvía una request al Core API. En AWS, el Security Group del Core solo acepta
+// conexiones originadas en el Security Group de Edge.
 const config = require('../config');
 const { AppError } = require('../utils/errors');
 
 // Headers del cliente que se propagan al Core
 const HEADERS_PROPAGADOS = ['authorization', 'x-app-version', 'accept-language'];
 
-function firmar(timestamp, metodo, path, body) {
-  return crypto
-    .createHmac('sha256', config.serviceSharedSecret)
-    .update(`${timestamp}.${metodo}.${path}.${body}`)
-    .digest('hex');
-}
-
-// Headers firmados hacia el Core: firma HMAC + los headers del cliente que se propagan
-function headersFirmados(method, path, bodyCrudo, headers) {
-  const timestamp = String(Date.now());
-  const outHeaders = {
-    'X-Service-Timestamp': timestamp,
-    'X-Service-Signature': firmar(timestamp, method, path, bodyCrudo),
-  };
+function headersAlCore(headers) {
+  const outHeaders = {};
   for (const nombre of HEADERS_PROPAGADOS) {
     if (headers[nombre]) outHeaders[nombre] = headers[nombre];
   }
@@ -33,7 +19,7 @@ async function reenviarACore(path, metodo, body, headers = {}) {
   const tieneBody = !['GET', 'HEAD'].includes(method) && body !== undefined;
   const bodyCrudo = tieneBody ? JSON.stringify(body) : '';
 
-  const outHeaders = headersFirmados(method, path, bodyCrudo, headers);
+  const outHeaders = headersAlCore(headers);
   if (tieneBody) outHeaders['Content-Type'] = 'application/json';
 
   let respuesta;
@@ -70,7 +56,7 @@ function forward(req, res, next) {
 // Si el Core responde un error (JSON), se devuelve el error igual que en forward.
 async function forwardImagen(req, res, next) {
   try {
-    const outHeaders = headersFirmados('GET', req.originalUrl, '', req.headers);
+    const outHeaders = headersAlCore(req.headers);
 
     let respuesta;
     try {

@@ -8,7 +8,7 @@ const { forward } = require('../../services/forward.service');
 
 const router = Router();
 
-// POST / identifica la especie con ai.service y luego reenvía al Core
+// POST / valida el multipart y lo reenvía; Core realiza la identificación síncrona.
 router.post('/', appVersion, auth, rateLimit, upload, controller.create);
 router.get('/me', appVersion, auth, rateLimit, forward);
 

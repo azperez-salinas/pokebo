@@ -197,12 +197,12 @@ test('rechaza celdas inválidas o de otra resolución con 400 INVALID_H3_CELL', 
   assert.equal(fakeRedis.values.size, 0);
 });
 
-test('guarda la celda activa con TTL de 2 minutos y devuelve nearby vacío si no hay nada', async () => {
+test('guarda la celda activa con TTL de 5 minutos y devuelve nearby vacío si no hay nada', async () => {
   reset();
   const result = await locationService.reportLocation('yo', CENTER);
   assert.deepEqual(result, { nearby: [] });
   assert.equal(fakeRedis.values.get('user:cell:yo'), CENTER);
-  assert.equal(fakeRedis.ttls.get('user:cell:yo'), 120);
+  assert.equal(fakeRedis.ttls.get('user:cell:yo'), 300);
   assert.deepEqual(await locationService.getUsersInCell(CENTER), ['yo']);
 });
 

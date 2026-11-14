@@ -38,6 +38,8 @@ const config = {
   loginCodePepper: process.env.LOGIN_CODE_PEPPER,
   awsRegion: process.env.AWS_REGION,
   otpEmailQueueUrl: process.env.OTP_EMAIL_QUEUE_URL,
+  pushQueueUrl: process.env.PUSH_QUEUE_URL,
+  pushFeedbackQueueUrl: process.env.PUSH_FEEDBACK_QUEUE_URL,
   otpResponseMinMs: parseInt(process.env.OTP_RESPONSE_MIN_MS, 10) || 1000,
   aiProviderApiKey: process.env.AI_PROVIDER_API_KEY,
   aiModel: process.env.AI_MODEL,

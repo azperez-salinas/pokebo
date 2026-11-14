@@ -21,12 +21,13 @@ export async function requestNearbyPermissions() {
 
 export async function enableNearbyAlerts() {
   await requestNearbyPermissions();
-  await updateMe({ settings: { nearbyAlerts: true } });
+  // El permiso de notificaciones ya fue concedido: activa el aviso local y el push del servidor.
+  await updateMe({ settings: { nearbyAlerts: true, pushEnabled: true } });
 }
 
 // Primero se apaga en el servidor: si falla, la tarea sigue y el ajuste coincide con lo que pasa.
 export async function disableNearbyAlerts() {
-  await updateMe({ settings: { nearbyAlerts: false } });
+  await updateMe({ settings: { nearbyAlerts: false, pushEnabled: false } });
   await stopBackgroundLocation();
 }
 

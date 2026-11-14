@@ -9,6 +9,9 @@ app.set('trust proxy', 1);
 
 app.use(express.json({ limit: '10mb' }));
 
+// Health check del contenedor y de Caddy: no requiere versión de app ni token, y no consulta al Core.
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
 app.use(require('./routes'));
 
 app.use((req, res) => res.status(404).json({ code: 'NOT_FOUND', message: 'Route not found' }));

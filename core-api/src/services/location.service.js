@@ -3,6 +3,7 @@ const { redisClient } = require('../config/redis');
 const User = require('../models/User.model');
 const sightingsService = require('./sightings.service');
 const notificationsService = require('./notifications.service');
+const pushPublisher = require('./push-publisher.service');
 const { AppError } = require('../utils/errors');
 const { latLngToCell: h3LatLngToCell, assertValidCell, cellsAround, ringDistance } = require('../utils/h3');
 
@@ -110,7 +111,8 @@ async function getUsersInCells(h3Indexes) {
 }
 
 // El sighting es el evento: al crearse genera buzón para usuarios activos en su celda o vecinas.
-// El polling todavía lo devuelve una vez para poder mostrar el aviso local sin duplicar el buzón.
+// Si al usuario se le publicó un push, el polling ya no lo devuelve; si no, lo devuelve una vez
+// para poder mostrar el aviso local sin duplicar el buzón.
 async function notifyUsersAboutSighting(sighting, species) {
   const candidateIds = (await getUsersInCells(cellsAround(sighting.h3Index, 1)))
     .filter((id) => String(id) !== String(sighting.user));
@@ -119,7 +121,7 @@ async function notifyUsersAboutSighting(sighting, species) {
   const users = await User.find({
     _id: { $in: candidateIds },
     'settings.nearbyAlerts': true,
-  }).select('_id').lean();
+  }).select('_id settings.pushEnabled pushTokens').lean();
 
   let notified = 0;
   for (const user of users) {
@@ -132,9 +134,44 @@ async function notifyUsersAboutSighting(sighting, species) {
       body: 'Nuevo avistamiento en tu zona.',
       data: { sightingId: sighting._id, h3Index: sighting.h3Index },
     });
-    if (saved) notified += 1;
+    if (saved) {
+      notified += 1;
+      await sendNearbyPush(user, saved, sighting);
+    }
   }
   return notified;
+}
+
+// Push del avistamiento cercano: requiere pushEnabled, nearbyAlerts (ya filtrado) y un token Android.
+// Si se publicó, se marca el avistamiento como visto para que el polling no muestre otro aviso local.
+// Un fallo de SQS no corta el flujo: el aviso queda en el buzón y el polling lo muestra como hasta ahora.
+async function sendNearbyPush(user, notification, sighting) {
+  if (!pushPublisher.isEnabled() || user.settings?.pushEnabled !== true) return false;
+  const tokens = pushPublisher.deliverableTokens(user.pushTokens);
+  if (tokens.length === 0) return false;
+
+  const userId = String(user._id);
+  try {
+    await pushPublisher.enqueue({
+      userId,
+      category: 'nearby',
+      title: notification.title,
+      body: notification.body,
+      tokens,
+      data: {
+        type: 'nearby',
+        notificationId: String(notification.id),
+        sightingId: String(sighting._id),
+        h3Index: sighting.h3Index,
+      },
+    });
+  } catch (cause) {
+    console.warn('[push] no se pudo publicar el aviso de cercanía:', cause?.name || 'Error');
+    return false;
+  }
+  await redisClient.sAdd(seenKey(userId), String(sighting._id));
+  await redisClient.expire(seenKey(userId), SEEN_TTL_SECONDS);
+  return true;
 }
 
 // Id de la celda H3 donde cae el punto

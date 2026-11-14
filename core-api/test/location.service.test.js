@@ -337,3 +337,63 @@ test('listInRadius usa el círculo geográfico y excluye avistamientos fuera del
   assert.equal(result.length, 1);
   assert.equal(result[0].h3Index, CENTER);
 });
+
+// --- Push de avistamiento cercano ---
+const pushPublisher = require('../src/services/push-publisher.service');
+
+function withPush(fn) {
+  return async () => {
+    const published = [];
+    const original = { enqueue: pushPublisher.enqueue, isEnabled: pushPublisher.isEnabled };
+    pushPublisher.isEnabled = () => true;
+    pushPublisher.enqueue = async (request) => { published.push(request); return { deliveryId: 'x' }; };
+    try { await fn(published); } finally { Object.assign(pushPublisher, original); }
+  };
+}
+
+const setupPushUser = (settings, pushTokens) => {
+  reset();
+  users.set('yo', { _id: 'yo', settings: { nearbyAlerts: true, ...settings }, pushTokens });
+};
+
+test('publica push al usuario con pushEnabled y token Android, y el polling no repite el aviso', withPush(async (published) => {
+  setupPushUser({ pushEnabled: true }, [{ token: 'tk-android', platform: 'android' }, { token: 'tk-ios', platform: 'ios' }]);
+  await locationService.updateLocation('yo', CENTER);
+  const sighting = addSighting({ h3Index: CENTER, user: 'otro', commonName: 'Zorro' });
+
+  await locationService.notifyUsersAboutSighting(sighting, sighting.species);
+
+  assert.equal(published.length, 1);
+  assert.equal(published[0].category, 'nearby');
+  assert.deepEqual(published[0].tokens, [{ token: 'tk-android', platform: 'android' }]);
+  assert.equal(published[0].title, 'Zorro cerca de vos');
+  assert.equal((await locationService.reportLocation('yo', CENTER)).nearby.length, 0);
+}));
+
+test('sin pushEnabled o sin token Android no publica y el polling sigue avisando', withPush(async (published) => {
+  setupPushUser({ pushEnabled: false }, [{ token: 'tk', platform: 'android' }]);
+  await locationService.updateLocation('yo', CENTER);
+  const sighting = addSighting({ h3Index: CENTER, user: 'otro' });
+  await locationService.notifyUsersAboutSighting(sighting, sighting.species);
+  assert.equal(published.length, 0);
+  assert.equal((await locationService.reportLocation('yo', CENTER)).nearby.length, 1);
+
+  setupPushUser({ pushEnabled: true }, [{ token: 'tk', platform: 'ios' }]);
+  await locationService.updateLocation('yo', CENTER);
+  const second = addSighting({ h3Index: CENTER, user: 'otro' });
+  await locationService.notifyUsersAboutSighting(second, second.species);
+  assert.equal(published.length, 0);
+}));
+
+test('si SQS falla el aviso queda en el buzón y el polling lo muestra', async () => {
+  setupPushUser({ pushEnabled: true }, [{ token: 'tk', platform: 'android' }]);
+  const original = { enqueue: pushPublisher.enqueue, isEnabled: pushPublisher.isEnabled };
+  pushPublisher.isEnabled = () => true;
+  pushPublisher.enqueue = async () => { throw new Error('sqs caído'); };
+  try {
+    await locationService.updateLocation('yo', CENTER);
+    const sighting = addSighting({ h3Index: CENTER, user: 'otro' });
+    assert.equal(await locationService.notifyUsersAboutSighting(sighting, sighting.species), 1);
+    assert.equal((await locationService.reportLocation('yo', CENTER)).nearby.length, 1);
+  } finally { Object.assign(pushPublisher, original); }
+});

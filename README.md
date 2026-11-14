@@ -307,36 +307,24 @@ El registro queda pendiente en Redis hasta que el usuario ingresa el código alf
 El código vence a los 5 minutos, admite hasta 5 intentos y cada reenvío invalida el código anterior.
 MongoDB recibe al usuario y el Core emite los tokens solamente después de una verificación correcta.
 
-### Gmail SMTP (MVP académico)
+### Envío del código por correo (Amazon SQS + Lambda + SES)
 
-El envío transaccional se realiza desde el Edge mediante Gmail SMTP. Esto permite que una persona se registre
-con una dirección real (por ejemplo, `pepe@gmail.com`) y reciba el código enviado por Pokebo sin comprar un dominio.
-La cuenta remitente configurada para el proyecto es `pokebouru@gmail.com`:
+El Edge **no envía correo ni conoce credenciales de correo**. El Core genera el código, lo guarda (hasheado) en
+Redis y publica un mensaje en la cola SQS `pokebo-demo-otp-email`; una Lambda (`workers/email-sender`) lo toma y
+lo envía con Amazon SES desde `pokebouru@gmail.com`. Cada envío lleva un `deliveryId` y una marca en DynamoDB
+evita enviarlo dos veces; si falla, se reintenta y, tras 5 intentos, queda en una cola de mensajes fallidos (DLQ).
 
-```env
-MAIL_PROVIDER=smtp
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=pokebouru@gmail.com
-SMTP_APP_PASSWORD=
-MAIL_FROM="Pokebo <pokebouru@gmail.com>"
-REGISTRATION_RESPONSE_MIN_MS=1000
-```
+Limitación del sandbox de SES: mientras la cuenta no salga del sandbox, SES **solo entrega a direcciones
+verificadas** (SES > Identities). Para la demo están verificados los correos del equipo.
 
-Para completar `SMTP_APP_PASSWORD`:
+Variables del Core (ver `core-api/.env.example`): `AWS_REGION`, `OTP_EMAIL_QUEUE_URL` y `OTP_RESPONSE_MIN_MS`.
 
-1. Activar la verificación en dos pasos de la cuenta Google remitente.
-2. Abrir la configuración de **Contraseñas de aplicaciones** de Google y crear una para Pokebo.
-3. Copiar la contraseña generada de 16 caracteres únicamente a `edge-api/.env`, sin comillas ni espacios.
-4. Reiniciar el Edge API para que tome la nueva configuración.
-
-No se debe usar la contraseña normal de Gmail ni guardar la contraseña de aplicación en Git, el README,
-la app móvil o el Core. Gmail SMTP es apropiado para la demo académica y pruebas de bajo volumen; para una
-puesta en producción se debe migrar a un proveedor transaccional con dominio propio y límites controlados.
+En desarrollo local con `docker compose`, el Core necesita esa cola y credenciales AWS para publicar el código,
+así que el registro por correo no funciona sin ellas (modo de desarrollo pendiente de decidir).
 
 En `core-api/.env` se recomienda definir un `REGISTRATION_CODE_PEPPER` largo y aleatorio, distinto de las
-claves JWT y del secreto compartido Edge-Core.
+claves JWT y del `LOGIN_CODE_PEPPER`. Ya no existe un secreto compartido Edge-Core: el acceso al Core lo
+restringen las reglas de red.
 
 ## Archivos de entorno
 
@@ -345,8 +333,8 @@ Todos los archivos `.env` reales están ignorados por Git. Los archivos importan
 | Archivo | Contenido | Sensibilidad |
 |---------|-----------|--------------|
 | `.env` | Credenciales de MongoDB y Redis utilizadas por Docker Compose. | Secreto |
-| `core-api/.env` | Clave privada JWT, secreto Edge-Core, conexiones internas y pepper de registro. | Secreto crítico |
-| `edge-api/.env` | Clave pública JWT, secreto Edge-Core, contraseña de aplicación SMTP y credenciales de servicios externos. | Secreto crítico |
+| `core-api/.env` | Clave privada JWT, peppers de códigos, clave del proveedor de IA y conexiones internas. | Secreto crítico |
+| `edge-api/.env` | Clave pública JWT y URL del Core. No contiene credenciales de datos, IA, correo ni push. | Configuración |
 | `app/.env` | URL pública del Edge usada por Expo. | Configuración pública; nunca debe contener secretos |
 
 Los archivos `.env.example` correspondientes documentan los nombres de las variables y son los únicos que
@@ -359,6 +347,10 @@ se implementa notificación push para avistamientos cercanos mientras no se tien
 	- Se guarda la última posición conocida del usuario por 5 minutos en Redis
 	- Cuando surge un nuevo avistamiento
 	- si matchea la posición en h3 del avistamiento con la ubicación última conocida del usuario (o algún hexágono vecino), se envía push
+
+En AWS el push sale por Core → SQS → Lambda → FCM (solo Android por ahora). Se envía si el usuario tiene activos
+`nearbyAlerts` y `pushEnabled` (la app activa ambos al aceptar "Avisos de cercanía") y al menos un token Android
+registrado. Si FCM rechaza un token, la Lambda lo devuelve por una cola y el Core lo retira de MongoDB.
 
 El radio de 2dsphere tiene un diámetro equivalente a los 7 hexágonos que componen la ubicación propia y sus vecinos (a definir)
 

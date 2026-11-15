@@ -11,7 +11,13 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F3F5FB"
-      }
+      },
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "plugins": [
       "expo-secure-store",
@@ -42,6 +48,6 @@
         "projectId": "f7d77889-9f2d-46a8-bc8d-495d50c45ce8"
       }
     },
-    "owner": "lhercmpj"
+    "owner": "lhercmpjs-team"
   }
 }

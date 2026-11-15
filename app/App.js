@@ -12,6 +12,7 @@ import MainNavigation from './src/navigation';
 import { AuthProvider } from './src/store/authStore';
 import useAuth from './src/hooks/useAuth';
 import useNearbyAlertsSync from './src/hooks/useNearbyAlertsSync';
+import usePushTokenRegistration from './src/hooks/usePushTokenRegistration';
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ function Root() {
   const [screen, setScreen] = useState('welcome');
   const { status, user, logout } = useAuth();
   useNearbyAlertsSync(status, user);
+  usePushTokenRegistration(status, user);
   const [fontsLoaded, fontError] = useFonts(fontSources);
 
   if(fontError){

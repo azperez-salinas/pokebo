@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema(
     username: { type: String, required: true, unique: true, trim: true },
     bio: { type: String, maxlength: 150 },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    emailVerifiedAt: { type: Date },
     passwordHash: { type: String, required: true },
     avatar: { type: String, enum: AVATARS, default: 'avatar_1' },
     settings: {

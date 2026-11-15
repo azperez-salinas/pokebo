@@ -1,6 +1,9 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { fonts, palette } from '../styles';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import AuthImage from './AuthImage';
+import PixelBox from './PixelBox';
+import Chip from './Chip';
+import { palette, spacing, type } from '../styles';
 import { photoSource } from '../services/images.service';
 
 // Tarjeta de la galería: foto de la captura y nombre común de la especie.
@@ -11,20 +14,28 @@ export default function CaptureTile({ capture, onPress }) {
       accessibilityRole="button"
       accessibilityLabel={`Ver ${name}`}
       onPress={onPress}
-      style={({ pressed }) => [local.tile, pressed && local.pressed]}
+      style={local.tile}
     >
-      <View style={local.photoFrame}>
-        <Image source={photoSource(capture.photoUrl)} style={local.photo} resizeMode="cover" />
-      </View>
-      <Text numberOfLines={2} style={local.name}>{name}</Text>
+      {({ pressed }) => (
+        <PixelBox pressed={pressed} shadowOffset={2} style={local.face}>
+          <View style={local.photoFrame}>
+            <AuthImage source={photoSource(capture.photoUrl)} style={local.photo} resizeMode="cover" />
+            {capture.count > 1 ? (
+              <View style={local.count}><Chip label={`x${capture.count}`} color={palette.amarillo} /></View>
+            ) : null}
+          </View>
+          <Text numberOfLines={2} style={local.name}>{name}</Text>
+        </PixelBox>
+      )}
     </Pressable>
   );
 }
 
 const local = StyleSheet.create({
-  tile: { flex: 1, margin: 6, backgroundColor: palette.blanco, borderWidth: 3, borderColor: palette.tinta, borderRadius: 4, padding: 4 },
-  pressed: { opacity: 0.65 },
-  photoFrame: { aspectRatio: 1, backgroundColor: palette.linea, borderRadius: 2, overflow: 'hidden' },
+  tile: { flex: 1, margin: spacing.xs },
+  face: { padding: spacing.xs },
+  photoFrame: { aspectRatio: 1, backgroundColor: palette.linea, overflow: 'hidden' },
   photo: { width: '100%', height: '100%' },
-  name: { fontFamily: fonts.body, fontSize: 18, lineHeight: 20, color: palette.tinta, marginTop: 4, minHeight: 40 },
+  count: { position: 'absolute', top: spacing.xs, right: spacing.xs },
+  name: { ...type.caption, color: palette.tinta, marginTop: spacing.xs, minHeight: 40 },
 });

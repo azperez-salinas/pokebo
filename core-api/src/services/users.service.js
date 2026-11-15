@@ -5,6 +5,7 @@ const Sighting = require('../models/Sighting.model');
 const Notification = require('../models/Notification.model');
 const UserAchievement = require('../models/UserAchievement.model');
 const { deleteImage } = require('./gridfs.service');
+const { deleteLocation } = require('./location.service');
 const { revokeAllRefreshTokens } = require('./token.service');
 const { AppError } = require('../utils/errors');
 const toPublicUser = require('../utils/toPublicUser');
@@ -84,8 +85,8 @@ async function deleteMe(userId) {
     Notification.deleteMany({ user: userId }),
     UserAchievement.deleteMany({ user: userId }),
   ]);
+  await deleteLocation(userId);
   await User.deleteOne({ _id: userId });
-  // TODO: borrar la ubicación del usuario en Redis cuando location.service esté implementado
 }
 
 module.exports = { getById, updateMe, registerPushToken, deleteMe };

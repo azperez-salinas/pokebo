@@ -5,11 +5,13 @@
   "description": "Edge API (DMZ): gateway/proxy hacia el Core API",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node --test"
   },
   "dependencies": {
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^2.4.0"
+    "multer": "^2.4.0",
+    "nodemailer": "^10.3.1"
   }
 }

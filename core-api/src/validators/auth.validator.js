@@ -12,11 +12,27 @@ const register = Joi.object({
   password: Joi.string().min(PASSWORD_MIN_LENGTH).required(),
 });
 
+const challengeId = Joi.string().guid({ version: ['uuidv4'] }).required();
+
+const verifyRegistration = Joi.object({
+  challengeId,
+  code: Joi.string().trim().uppercase().length(6).pattern(/^[A-Z0-9]+$/).required(),
+});
+
+const resendRegistration = Joi.object({ challengeId });
+
 // Solo credenciales: cualquier otro campo se descarta
 const login = Joi.object({
   username,
   password: Joi.string().required(),
 });
+
+const verifyLogin = Joi.object({
+  challengeId,
+  code: Joi.string().trim().uppercase().length(6).pattern(/^[A-Z0-9]+$/).required(),
+});
+
+const resendLogin = Joi.object({ challengeId });
 
 const changePassword = Joi.object({
   currentPassword: Joi.string().required(),
@@ -41,4 +57,17 @@ const logout = Joi.object({
   refreshToken: Joi.string().required(),
 });
 
-module.exports = { username, register, login, changePassword, refresh, forgotPassword, resetPassword, logout};
+module.exports = {
+  username,
+  register,
+  verifyRegistration,
+  resendRegistration,
+  login,
+  verifyLogin,
+  resendLogin,
+  changePassword,
+  refresh,
+  forgotPassword,
+  resetPassword,
+  logout,
+};

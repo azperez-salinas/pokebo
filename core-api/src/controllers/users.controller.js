@@ -1,6 +1,5 @@
 const usersService = require('../services/users.service');
-
-const notImplemented = (req, res) => res.status(501).json({ code: 'NOT_IMPLEMENTED', message: 'TODO' });
+const locationService = require('../services/location.service');
 
 async function getMe(req, res, next) {
   try {
@@ -29,6 +28,15 @@ async function registerPushToken(req, res, next) {
   }
 }
 
+async function updateMyLocation(req, res, next) {
+  try {
+    const result = await locationService.reportLocation(req.user.id, req.body.h3Index);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function deleteMe(req, res, next) {
   try {
     await usersService.deleteMe(req.user.id);
@@ -41,7 +49,7 @@ async function deleteMe(req, res, next) {
 module.exports = {
   getMe,
   updateMe,
-  updateMyLocation: notImplemented,
+  updateMyLocation,
   registerPushToken,
   deleteMe,
 };

@@ -3,6 +3,22 @@
     "name": "pokebo",
     "slug": "pokebo",
     "version": "0.1.0",
+    "ios": {
+      "bundleIdentifier": "com.pokebo.app"
+    },
+    "android": {
+      "package": "com.pokebo.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F3F5FB"
+      },
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
     "plugins": [
       "expo-secure-store",
       [
@@ -16,12 +32,22 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Pokebo usa tu ubicación al sacar una foto para registrar dónde viste al animal.",
+          "locationWhenInUsePermission": "Pokebo usa tu ubicación para registrar capturas y avisarte sobre avistamientos cercanos mientras usás la app.",
           "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false,
           "isIosBackgroundLocationEnabled": false
         }
       ],
+      "expo-notifications",
       "expo-font"
-    ]
+    ],
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "extra": {
+      "eas": {
+        "projectId": "f7d77889-9f2d-46a8-bc8d-495d50c45ce8"
+      }
+    },
+    "owner": "lhercmpjs-team"
   }
 }

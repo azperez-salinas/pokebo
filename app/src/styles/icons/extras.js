@@ -4,6 +4,7 @@ export default {
   flash: require('../../assets/icons/extras/flash.png'),
   gps: require('../../assets/icons/extras/gps.png'),
   heart: require('../../assets/icons/extras/heart.png'),
+  inbox: require('../../assets/icons/extras/inbox.png'),
   lock: require('../../assets/icons/extras/lock.png'),
   pinBlue: require('../../assets/icons/extras/pin_blue.png'),
   pinGreen: require('../../assets/icons/extras/pin_green.png'),

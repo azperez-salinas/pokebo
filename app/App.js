@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import styles, { colors, fontSources } from './src/styles';
+import './src/tasks/locationTask'; // registra la tarea de ubicación en segundo plano al cargar la app
+import styles, { fontSources } from './src/styles';
+import PixelSpinner from './src/components/PixelSpinner';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import MainNavigation from './src/navigation';
 import { AuthProvider } from './src/store/authStore';
 import useAuth from './src/hooks/useAuth';
+import useNearbyAlertsSync from './src/hooks/useNearbyAlertsSync';
+import usePushTokenRegistration from './src/hooks/usePushTokenRegistration';
 
 export default function App() {
   return (
@@ -23,14 +27,16 @@ export default function App() {
 function Loading({ label }) {
   return (
     <View style={[styles.screen, styles.content]}>
-      <ActivityIndicator accessibilityLabel={label} color={colors.accent} />
+      <PixelSpinner accessibilityLabel={label} />
     </View>
   );
 }
 
 function Root() {
   const [screen, setScreen] = useState('welcome');
-  const { status, logout } = useAuth();
+  const { status, user, logout } = useAuth();
+  useNearbyAlertsSync(status, user);
+  usePushTokenRegistration(status, user);
   const [fontsLoaded, fontError] = useFonts(fontSources);
 
   if(fontError){

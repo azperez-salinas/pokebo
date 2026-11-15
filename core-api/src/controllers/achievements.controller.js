@@ -1,5 +1,11 @@
-const notImplemented = (req, res) => res.status(501).json({ code: 'NOT_IMPLEMENTED', message: 'TODO' });
+const achievementsService = require('../services/achievements.service');
 
-module.exports = {
-  list: notImplemented,
-};
+async function list(req, res, next) {
+  try {
+    res.status(200).json(await achievementsService.listForUser(req.user.id));
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { list };

@@ -39,10 +39,12 @@ export default function useCamera() {
     return requestPermission();
   }, [permission, requestPermission]);
 
-  // Saca la foto en el momento (no desde la galería) y la devuelve en JPEG de <= 5 MB
-  const takePhoto = useCallback(async () => {
+  // Saca la foto en el momento (no desde la galería) y la devuelve en JPEG de <= 5 MB.
+  // onTaken(uri) se llama apenas la cámara capturó, antes de comprimir, para congelar la imagen en pantalla.
+  const takePhoto = useCallback(async (onTaken) => {
     if (!cameraRef.current) throw new Error('La cámara todavía no está lista.');
     const photo = await cameraRef.current.takePictureAsync({ quality: 1, exif: false });
+    onTaken?.(photo.uri);
     return toJpeg(photo);
   }, []);
 

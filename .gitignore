@@ -29,6 +29,7 @@ secrets/
 .DS_Store
 Thumbs.db
 .idea/
+.vscode
 
 # Firebase Android (configuracion local)
 /app/google-services.json

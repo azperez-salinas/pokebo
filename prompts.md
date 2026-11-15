@@ -721,3 +721,154 @@ Lo que se hizo (app/src):
 
 Verificado con los tests de la app (34) y un chequeo de parseo e identificadores sin declarar de todos los archivos, además de revisar cada imagen exportada; el usuario fue probando en el teléfono y confirmó el resultado final de la pestaña de perfil ("ahora sí quedó bien"). Sin probar en iPhone. El teclado en Android conviene reconfirmarlo.
 ```
+## 2026-11-14 — Dia de migracion
+
+```text
+Quiero que te encargues de migrar este proyecto a AWS, pero necesito participar activamente durante todo el proceso.
+
+Antes de comenzar, analizá el repositorio completo y especialmente:
+
+- `AGENTS.md`
+- `AWS_MIGRATION_AGENT.md`
+- `README.md`
+- `infra/README.md`
+- `infra/lib/compute-stack.ts`
+- El resto de la infraestructura dentro de `infra/`
+
+Verificá también el estado actual del proyecto AWS y comparalo con lo documentado. No asumas que una etapa está terminada sin comprobarlo.
+
+## Forma de trabajo que necesito
+
+Quiero un nivel de colaboración alto. No quiero que realices toda la migración silenciosamente y me informes solamente al final.
+
+Necesito que:
+
+1. Me expliques qué etapa vamos a realizar.
+2. Me indiques qué servicio de AWS se utilizará y para qué sirve.
+3. Me muestres cómo se relaciona con nuestro sistema actual.
+4. Me consultes antes de cada decisión importante.
+5. Me presentes las alternativas relevantes, con sus ventajas, desventajas y costos.
+6. Me des tu recomendación técnica, pero me permitas tomar la decisión final.
+7. Me indiques cómo puedo observar cada cambio desde AWS Management Console.
+8. Me informes qué recursos quedan generando costos después de cada etapa.
+
+No avances con una decisión importante hasta que yo responda expresamente.
+
+## Antes de modificar AWS
+
+Antes de crear, modificar, reemplazar o eliminar recursos, explicame:
+
+- Qué recurso se modificará.
+- Qué función cumple.
+- Por qué es necesario.
+- Qué efecto tendrá sobre el sistema.
+- Cuánto puede costar.
+- Qué riesgos introduce.
+- Cómo se puede revertir.
+
+Pedime autorización antes de ejecutar la acción.
+
+También necesito aprobación previa para:
+
+- Ejecutar `cdk deploy`.
+- Cambiar tipos o tamaños de instancias.
+- Modificar redes, subredes o Security Groups.
+- Hacer público algún componente.
+- Ampliar permisos IAM.
+- Agregar nuevos servicios.
+- Cambiar la arquitectura acordada.
+- Eliminar stacks, datos, volúmenes, snapshots o secretos.
+- Liberar una Elastic IP.
+- Realizar cualquier acción destructiva.
+- Hacer algo que pueda aumentar significativamente el gasto.
+
+## Proceso de despliegue
+
+Antes de cada despliegue con AWS CDK, mostrame:
+
+1. Las pruebas ejecutadas y su resultado.
+2. El resultado de `cdk synth`.
+3. Los controles de seguridad.
+4. Un resumen comprensible de `cdk diff`.
+5. Los recursos que se crearán, modificarán o eliminarán.
+6. La variación estimada del costo.
+7. El procedimiento de rollback.
+
+Después preguntame explícitamente si autorizo el despliegue.
+
+No ejecutes `cdk deploy` hasta recibir mi confirmación.
+
+## Explicaciones para aprendizaje
+
+No tengo experiencia avanzada con AWS. Cuando aparezca un término propio de AWS, explicalo brevemente y comparalo, cuando sea posible, con el sistema local actual.
+
+Por ejemplo, quiero comprender:
+
+- Qué reemplaza a las redes internas de Docker.
+- Cómo se limita el acceso entre Edge, Core, MongoDB y Redis.
+- Cómo funcionan EC2, Elastic IP, ECR, SQS, Lambda, SES, Secrets Manager y Systems Manager.
+- Qué recursos son públicos y cuáles privados.
+- Dónde se guardan los secretos.
+- Cómo se despliega una actualización.
+- Cómo se detiene y vuelve a iniciar el sistema.
+- Qué sigue generando costos cuando las máquinas están apagadas.
+- Cómo se diagnostica un fallo.
+- Cómo se recuperan datos o se revierte un cambio.
+
+Las explicaciones deben ser claras, concretas y aplicadas a este proyecto.
+
+## Entregas durante el proceso
+
+Trabajá en etapas pequeñas. Al finalizar cada una, entregame:
+
+- Qué se hizo.
+- Qué resultado se obtuvo.
+- Qué cambió en la arquitectura.
+- Cómo puedo comprobarlo en AWS.
+- Qué pruebas se realizaron.
+- Qué costos permanecen activos.
+- Qué problemas o limitaciones quedan.
+- Cuál es el siguiente paso propuesto.
+
+Esperá mi respuesta antes de comenzar una nueva etapa importante.
+
+## Seguridad
+
+No muestres ni registres secretos, claves privadas, tokens, OTP ni credenciales.
+
+No coloques secretos en Git, imágenes Docker, logs, outputs de CDK ni user data de EC2.
+
+Utilizá roles IAM y permisos mínimos. No crees credenciales AWS estáticas.
+
+Si encontrás un riesgo de seguridad, detenete, explicame el problema y consultame cómo continuar.
+
+## Restricciones actuales
+
+Respetá las decisiones documentadas en el proyecto, incluyendo:
+
+- Trabajar en la rama `migracion-aws`.
+- Utilizar la región `us-east-2`.
+- Mantener Edge como único punto público de entrada.
+- Mantener Core, MongoDB y Redis en la zona privada.
+- Mantener los secretos importantes fuera de Edge.
+- Utilizar AWS CDK v2 con TypeScript.
+- Mantener el sistema dentro del presupuesto aprobado.
+- No cambiar servicios o arquitectura sin consultarme.
+
+Si alguna decisión documentada entra en conflicto con el estado real de AWS o con una limitación técnica, no la cambies automáticamente: explicame el conflicto y pedime una decisión.
+
+## Primer paso
+
+Comenzá realizando únicamente una evaluación de situación.
+
+Mostrame:
+
+1. Estado del repositorio y la rama.
+2. Cambios locales pendientes.
+3. Arquitectura definida en el código.
+4. Recursos que existen actualmente en AWS.
+5. Etapas completadas y pendientes.
+6. Costos activos estimados.
+7. Riesgos o inconsistencias encontradas.
+8. Próximo paso recomendado.
+```
